@@ -112,24 +112,36 @@ def pcp_index(request):
 def pcp_processar(request):
     if not _user_pode_gerenciar_pcp(request.user):
         return _json_forbidden()
+    
     arquivo = request.FILES.get('arquivo')
-
-    if not arquivo:
-        return JsonResponse({'erro': 'Nenhum arquivo enviado.'}, status=400)
-
+    project_id = request.POST.get('project_id', '').strip()
     lote_str = request.POST.get('lote', '').strip()
+
+    if not arquivo and not project_id:
+        return JsonResponse({'erro': 'Envie um arquivo ou informe o ID do projeto Dinabox.'}, status=400)
+
     if not lote_str or not lote_str.isdigit() or int(lote_str) <= 0:
         return JsonResponse({'erro': 'Informe um numero de lote valido.'}, status=400)
 
     try:
-        df, xls_bytes, nome_saida, pid, resumo_processamento = processar_arquivo_dinabox(
-            arquivo,
-            int(lote_str),
-        )
+        from apps.pcp.services.pcp_service import processar_projeto_dinabox
+
+        if project_id:
+            df, xls_bytes, nome_saida, pid, resumo_processamento = processar_projeto_dinabox(
+                project_id,
+                int(lote_str),
+            )
+            nome_display = f"Projeto {project_id} (API)"
+        else:
+            df, xls_bytes, nome_saida, pid, resumo_processamento = processar_arquivo_dinabox(
+                arquivo,
+                int(lote_str),
+            )
+            nome_display = arquivo.name
 
         processamento = ProcessamentoPCP.objects.create(
             id=pid,
-            nome_arquivo=arquivo.name,
+            nome_arquivo=nome_display,
             lote=int(lote_str),
             total_pecas=len(df),
             usuario=request.user if request.user.is_authenticated else None,

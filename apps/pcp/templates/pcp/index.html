@@ -421,16 +421,24 @@
 
     function verificarPronto() {
         const loteValido = document.getElementById('input-lote').value && parseInt(document.getElementById('input-lote').value) > 0;
-        document.getElementById('btn-processar').disabled = !(arquivoAtual && loteValido);
+        const projectId = document.getElementById('input-project-id').value.trim();
+        document.getElementById('btn-processar').disabled = !((arquivoAtual || projectId) && loteValido);
     }
 
     // Processar
     async function processarArquivo() {
-        if (!arquivoAtual || !document.getElementById('input-lote').value) return;
+        const lote = document.getElementById('input-lote').value;
+        const projectId = document.getElementById('input-project-id').value.trim();
+        if ((!arquivoAtual && !projectId) || !lote) return;
 
         const formData = new FormData();
-        formData.append('arquivo', arquivoAtual);
-        formData.append('lote', document.getElementById('input-lote').value);
+        if (arquivoAtual) {
+            formData.append('arquivo', arquivoAtual);
+        }
+        if (projectId) {
+            formData.append('project_id', projectId);
+        }
+        formData.append('lote', lote);
 
         document.getElementById('btn-processar').disabled = true;
         document.getElementById('progress-wrap').classList.remove('hidden');
