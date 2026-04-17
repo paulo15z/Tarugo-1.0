@@ -145,45 +145,27 @@
     </button>
     <button onclick="showTab(1)" id="tab-1"
             class="tab-button px-8 py-4 font-bold text-sm text-gray-500 hover:text-gray-300 display uppercase tracking-wider">
+        <i class="fas fa-cloud-download-alt mr-2"></i> Importação
+    </button>
+    <button onclick="showTab(2)" id="tab-2"
+            class="tab-button px-8 py-4 font-bold text-sm text-gray-500 hover:text-gray-300 display uppercase tracking-wider">
         <i class="fas fa-history mr-2"></i> Histórico
     </button>
-    <a href="{% url 'estoque:lista_reservas' %}" id="tab-2"
+    <a href="{% url 'estoque:lista_reservas' %}" id="tab-3"
             class="tab-button px-8 py-4 font-bold text-sm text-gray-500 hover:text-gray-300 display uppercase tracking-wider">
         <i class="fas fa-calendar-check mr-2"></i> Reservas
     </a>
 </div>
 
-<!-- TAB 1: UPLOAD -->
+<!-- TAB 0: UPLOAD LEGADO -->
 <div id="tab-content-0" class="tab-content">
     <div class="card p-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Upload de Arquivo -->
-            <div id="drop-area"
-                 class="border-2 border-dashed border-gray-300 hover:border-orange-500 rounded-2xl p-10 text-center cursor-pointer flex flex-col items-center justify-center">
-                <i class="fas fa-cloud-upload-alt text-5xl text-gray-300 mb-4"></i>
-                <p class="text-base font-medium text-gray-200">Arraste o arquivo ou clique</p>
-                <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">CSV, XLS ou XLSX</p>
-                <div id="file-name" class="mt-4 text-orange-500 font-bold mono text-sm"></div>
-            </div>
-
-            <!-- Busca por API -->
-            <div class="flex flex-col justify-center border-2 border-gray-800 rounded-2xl p-10 bg-gray-900/30">
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 mono text-center">
-                    Ou busque pela API Dinabox
-                </label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500">
-                        <i class="fas fa-search"></i>
-                    </span>
-                    <input type="text" id="input-project-id" placeholder="ID do Projeto (ex: 12345)"
-                           class="w-full bg-gray-900 border border-gray-700 rounded-xl pl-12 pr-4 py-4 text-lg font-bold text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder:text-gray-700"
-                           oninput="verificarPronto()">
-                </div>
-                <p class="text-[11px] text-gray-600 mt-4 text-center leading-relaxed">
-                    O ID do projeto está disponível na URL do Dinabox.<br>
-                    Ex: dinabox.com.br/projeto/<span class="text-orange-900 font-bold">12345</span>
-                </p>
-            </div>
+        <div id="drop-area"
+             class="border-2 border-dashed border-gray-300 hover:border-orange-500 rounded-2xl p-16 text-center cursor-pointer mb-8">
+            <i class="fas fa-cloud-upload-alt text-6xl text-gray-300 mb-4"></i>
+            <p class="text-lg font-medium text-gray-200">Arraste o arquivo CSV/XLS ou clique para selecionar</p>
+            <p class="text-sm text-gray-500 mt-2 uppercase tracking-widest">Processamento Manual Legado</p>
+            <div id="file-name" class="mt-6 text-orange-500 font-bold mono text-sm"></div>
         </div>
 
         <input type="file" id="file-input" accept=".csv,.xls,.xlsx" class="hidden">
@@ -193,18 +175,63 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 mono">
                     Número do Lote <span class="text-orange-500">*</span>
                 </label>
-                <input type="number" id="input-lote" min="1" placeholder="Ex: 305"
+                <input type="number" id="input-lote-legacy" min="1" placeholder="Ex: 305"
                        class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-xl font-bold text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
                        oninput="verificarPronto()">
             </div>
-            <button id="btn-processar"
-                    onclick="processarArquivo()"
+            <button id="btn-processar-legacy"
+                    onclick="processarArquivo('legacy')"
                     disabled
                     class="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-800 disabled:text-gray-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all display uppercase tracking-widest">
                 <i class="fas fa-play"></i>
-                Gerar Roteiro
+                Gerar Roteiro (Manual)
             </button>
         </div>
+    </div>
+</div>
+
+<!-- TAB 1: IMPORTAÇÃO API (NOVO) -->
+<div id="tab-content-1" class="tab-content hidden">
+    <div class="card p-8">
+        <div class="flex flex-col items-center justify-center border-2 border-gray-800 rounded-2xl p-12 bg-gray-900/30 mb-8">
+            <div class="w-full max-w-md">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 mono text-center">
+                    Importar Projeto via API Dinabox
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500">
+                        <i class="fas fa-fingerprint text-xl"></i>
+                    </span>
+                    <input type="text" id="input-project-id" placeholder="ID do Projeto (ex: 12345)"
+                           class="w-full bg-gray-900 border border-gray-700 rounded-xl pl-12 pr-4 py-5 text-2xl font-bold text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder:text-gray-800"
+                           oninput="verificarPronto()">
+                </div>
+                <p class="text-xs text-gray-600 mt-6 text-center leading-relaxed">
+                    O ID do projeto está disponível na URL do Dinabox.<br>
+                    Ex: dinabox.com.br/projeto/<span class="text-orange-900 font-bold">12345</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 mono">
+                    Número do Lote <span class="text-orange-500">*</span>
+                </label>
+                <input type="number" id="input-lote-api" min="1" placeholder="Ex: 305"
+                       class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-xl font-bold text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                       oninput="verificarPronto()">
+            </div>
+            <button id="btn-processar-api"
+                    onclick="processarArquivo('api')"
+                    disabled
+                    class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all display uppercase tracking-widest">
+                <i class="fas fa-sync-alt"></i>
+                Importar e Gerar XLS
+            </button>
+        </div>
+    </div>
+</div>
 
         <div id="progress-wrap" class="hidden mt-8">
             <div class="h-1.5 bg-gray-800 rounded-full overflow-hidden">
@@ -268,7 +295,7 @@
 </div>
 
 <!-- TAB 2: HISTÓRICO -->
-<div id="tab-content-1" class="tab-content hidden">
+<div id="tab-content-2" class="tab-content hidden">
     <div class="card p-0 overflow-hidden">
         <div class="p-8 border-b border-gray-800">
             <h2 class="text-lg font-bold text-gray-100 display uppercase tracking-wider">Histórico de Processamentos</h2>
@@ -415,7 +442,7 @@
             btn.classList.toggle('text-gray-500', i !== tabIndex);
             btn.classList.toggle('tab-button-active', i === tabIndex);
         });
-        if (tabIndex === 1) carregarHistorico();
+        if (tabIndex === 2) carregarHistorico();
     }
 
     // Drag & Drop
@@ -442,27 +469,32 @@
     }
 
     function verificarPronto() {
-        const loteValido = document.getElementById('input-lote').value && parseInt(document.getElementById('input-lote').value) > 0;
+        const loteLegacy = document.getElementById('input-lote-legacy').value && parseInt(document.getElementById('input-lote-legacy').value) > 0;
+        const loteApi = document.getElementById('input-lote-api').value && parseInt(document.getElementById('input-lote-api').value) > 0;
         const projectId = document.getElementById('input-project-id').value.trim();
-        document.getElementById('btn-processar').disabled = !((arquivoAtual || projectId) && loteValido);
+
+        document.getElementById('btn-processar-legacy').disabled = !(arquivoAtual && loteLegacy);
+        document.getElementById('btn-processar-api').disabled = !(projectId && loteApi);
     }
 
     // Processar
-    async function processarArquivo() {
-        const lote = document.getElementById('input-lote').value;
+    async function processarArquivo(modo) {
+        const lote = modo === 'api' ? document.getElementById('input-lote-api').value : document.getElementById('input-lote-legacy').value;
         const projectId = document.getElementById('input-project-id').value.trim();
-        if ((!arquivoAtual && !projectId) || !lote) return;
+        
+        if (modo === 'api' && (!projectId || !lote)) return;
+        if (modo === 'legacy' && (!arquivoAtual || !lote)) return;
 
         const formData = new FormData();
-        if (arquivoAtual) {
-            formData.append('arquivo', arquivoAtual);
-        }
-        if (projectId) {
+        if (modo === 'api') {
             formData.append('project_id', projectId);
+        } else {
+            formData.append('arquivo', arquivoAtual);
         }
         formData.append('lote', lote);
 
-        document.getElementById('btn-processar').disabled = true;
+        const btn = modo === 'api' ? document.getElementById('btn-processar-api') : document.getElementById('btn-processar-legacy');
+        btn.disabled = true;
         document.getElementById('progress-wrap').classList.remove('hidden');
         document.getElementById('alert-err').classList.add('hidden');
         document.getElementById('resultado').classList.add('hidden');
@@ -474,14 +506,14 @@
                 body: formData,
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.erro || 'Erro ao processar arquivo');
+            if (!response.ok) throw new Error(data.erro || 'Erro ao processar');
             exibirResultado(data);
         } catch (err) {
             const errDiv = document.getElementById('alert-err');
             errDiv.textContent = err.message;
             errDiv.classList.remove('hidden');
         } finally {
-            document.getElementById('btn-processar').disabled = false;
+            btn.disabled = false;
             document.getElementById('progress-wrap').classList.add('hidden');
         }
     }
