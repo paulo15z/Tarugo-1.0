@@ -54,10 +54,8 @@ def _montar_resumo_processamento(total_entrada: int, df_saida) -> dict:
     }
 
 
-def processar_arquivo_dinabox(uploaded_file, lote: int):
-    """Processa arquivo Dinabox e gera roteiro XLS + lote PCP."""
-    df = DinaboxService.parse_to_dataframe(uploaded_file.read(), uploaded_file.name)
-
+def _processar_dataframe_comum(df, lote: int, nome_arquivo: str):
+    """Lógica comum de processamento de DataFrame para PCP."""
     total_entrada = len(df)
     df = consolidar_ripas(df)
     df["ROTEIRO"] = df.apply(calcular_roteiro, axis=1)
@@ -86,7 +84,7 @@ def processar_arquivo_dinabox(uploaded_file, lote: int):
         ).str.strip()
 
     pid = str(uuid.uuid4())[:8]
-    nome_saida = f"{pid}_{uploaded_file.name.rsplit('.', 1)[0]}.xls"
+    nome_saida = f"{pid}_{nome_arquivo.rsplit('.', 1)[0]}.xls"
     xls_buf = gerar_xls_roteiro(df)
     xls_bytes = xls_buf.getvalue()
 
@@ -98,9 +96,22 @@ def processar_arquivo_dinabox(uploaded_file, lote: int):
     LotePCPService.criar_lote_a_partir_de_dataframe(
         df=df,
         pid=pid,
-        nome_arquivo=uploaded_file.name,
+        nome_arquivo=nome_arquivo,
     )
 
     resumo_processamento = _montar_resumo_processamento(total_entrada, df)
 
     return df, xls_bytes, nome_saida, pid, resumo_processamento
+
+
+def processar_arquivo_dinabox(uploaded_file, lote: int):
+    """Processa arquivo Dinabox e gera roteiro XLS + lote PCP."""
+    df = DinaboxService.parse_to_dataframe(uploaded_file.read(), uploaded_file.name)
+    return _processar_dataframe_comum(df, lote, uploaded_file.name)
+
+
+def processar_projeto_dinabox(project_id: str, lote: int):
+    """Busca projeto via API Dinabox, gera roteiro XLS + lote PCP."""
+    df = DinaboxService.get_project_as_dataframe(project_id)
+    nome_arquivo = f"projeto_{project_id}.api"
+    return _processar_dataframe_comum(df, lote, nome_arquivo)

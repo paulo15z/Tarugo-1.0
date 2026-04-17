@@ -1,7 +1,8 @@
 from io import BytesIO
-
+import json
 import pandas as pd
 from pydantic import BaseModel, Field
+from .schemas.dinabox_operacional import DinaboxProjectOperacional
 
 
 EXPECTED_DINABOX_COLUMNS = [
@@ -57,6 +58,54 @@ class DinaboxService:
     Servico central para importar e padronizar arquivos do Dinabox.
     Prioridade de mapeamento: posicao da coluna -> nome/alias.
     """
+
+    @staticmethod
+    def get_project_as_dataframe(project_id: str) -> pd.DataFrame:
+        """Busca o projeto na API e converte para o formato DataFrame compatível com PCP."""
+        from .client import DinaboxAPIClient
+        client = DinaboxAPIClient()
+        raw_data = client.get_project(project_id)
+        project = DinaboxProjectOperacional.model_validate(raw_data)
+        
+        rows = []
+        for module in project.woodwork:
+            for part in module.parts:
+                # Mapeamento para o formato legado do CSV esperado pelo PCP 1.0
+                # A ordem aqui segue exatamente EXPECTED_DINABOX_COLUMNS
+                row = {
+                    "NOME DO CLIENTE": project.project_customer_name,
+                    "ID DO PROJETO": project.project_id,
+                    "NOME DO PROJETO": project.project_description,
+                    "REFERÊNCIA DA PEÇA": f"{module.ref} - {part.ref}",
+                    "DESCRIÇÃO MÓDULO": module.name,
+                    "QUANTIDADE": str(part.count),
+                    "LARGURA DA PEÇA": str(part.width).replace(".", ","),
+                    "ALTURA DA PEÇA": str(part.height).replace(".", ","),
+                    "METRO QUADRADO": str(part.material.m2).replace(".", ",") if part.material else "0",
+                    "ESPESSURA": str(part.thickness).replace(".", ","),
+                    "CODIGO DO MATERIAL": part.material.id if part.material else "",
+                    "MATERIAL DA PEÇA": part.material.name if part.material else "",
+                    "VEIO": "Sim" if part.material and part.material.vein else "Não",
+                    "BORDA_FACE_FRENTE": part.edge_top.name or "",
+                    "BORDA_FACE_TRASEIRA": part.edge_bottom.name or "",
+                    "BORDA_FACE_LE": part.edge_left.name or "",
+                    "BORDA_FACE_LD": part.edge_right.name or "",
+                    "LOTE": "", # Preenchido depois pelo PCP
+                    "OBSERVAÇÃO": part.note or "",
+                    "DESCRIÇÃO DA PEÇA": part.name,
+                    "ID DA PEÇA": part.id,
+                    "LOCAL": part.entity or "",
+                    "DUPLAGEM": "Sim" if "_dup_" in (part.note or "").lower() else "", 
+                    "FURO": "Sim" if part.total_holes > 0 else "Não",
+                    "OBS": part.note or "",
+                    "REFERENCIA": f"{module.ref} - {part.ref}",
+                }
+                rows.append(row)
+        
+        df = pd.DataFrame(rows)
+        # Reordenar colunas para garantir que a ordem do XLS seja preservada
+        df = df[EXPECTED_DINABOX_COLUMNS]
+        return df
 
     @staticmethod
     def parse_to_dataframe(raw_file: bytes, filename: str) -> pd.DataFrame:

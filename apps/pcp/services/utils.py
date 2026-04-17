@@ -5,7 +5,11 @@ from io import BytesIO
 from typing import Any
 
 import pandas as pd
-import xlwt
+
+try:
+    import xlwt
+except ModuleNotFoundError:  # pragma: no cover - depende do ambiente
+    xlwt = None
 
 BORDA_COLS = ['BORDA_FACE_FRENTE', 'BORDA_FACE_TRASEIRA', 'BORDA_FACE_LE', 'BORDA_FACE_LD']
 
@@ -147,7 +151,7 @@ def consolidar_ripas(df: pd.DataFrame) -> pd.DataFrame:
 
             observacao_txt = (
                 f"TIRA {i + 1}/{qtd_tiras} -> "
-                f"{pecas_nesta_tira}/{total_pecas} PCS {int(altura_ripa)}mm | "
+                f"{pecas_nesta_tira}/{total_pecas} PCS {int(altura_ripa)}mm - "
                 f"{max_por_tira} pcs/tira"
             )
             if obs_col:
@@ -286,6 +290,8 @@ def calcular_roteiro(row) -> str:
 
 def gerar_xls_roteiro(df: pd.DataFrame) -> BytesIO:
     """Gera arquivo XLS formatado com estilos."""
+    if xlwt is None:
+        raise ModuleNotFoundError("xlwt nao esta instalado no ambiente.")
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('Roteiro de Pecas')
 
