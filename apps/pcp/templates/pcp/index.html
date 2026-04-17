@@ -156,12 +156,34 @@
 <!-- TAB 1: UPLOAD -->
 <div id="tab-content-0" class="tab-content">
     <div class="card p-8">
-        <div id="drop-area"
-             class="border-2 border-dashed border-gray-300 hover:border-orange-500 rounded-2xl p-16 text-center cursor-pointer mb-8">
-            <i class="fas fa-cloud-upload-alt text-6xl text-gray-300 mb-4"></i>
-            <p class="text-lg font-medium text-gray-200">Arraste o arquivo ou clique para selecionar</p>
-            <p class="text-sm text-gray-500 mt-2">Formatos aceitos: CSV, XLS ou XLSX</p>
-            <div id="file-name" class="mt-6 text-orange-500 font-bold mono"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Upload de Arquivo -->
+            <div id="drop-area"
+                 class="border-2 border-dashed border-gray-300 hover:border-orange-500 rounded-2xl p-10 text-center cursor-pointer flex flex-col items-center justify-center">
+                <i class="fas fa-cloud-upload-alt text-5xl text-gray-300 mb-4"></i>
+                <p class="text-base font-medium text-gray-200">Arraste o arquivo ou clique</p>
+                <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">CSV, XLS ou XLSX</p>
+                <div id="file-name" class="mt-4 text-orange-500 font-bold mono text-sm"></div>
+            </div>
+
+            <!-- Busca por API -->
+            <div class="flex flex-col justify-center border-2 border-gray-800 rounded-2xl p-10 bg-gray-900/30">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 mono text-center">
+                    Ou busque pela API Dinabox
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="input-project-id" placeholder="ID do Projeto (ex: 12345)"
+                           class="w-full bg-gray-900 border border-gray-700 rounded-xl pl-12 pr-4 py-4 text-lg font-bold text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder:text-gray-700"
+                           oninput="verificarPronto()">
+                </div>
+                <p class="text-[11px] text-gray-600 mt-4 text-center leading-relaxed">
+                    O ID do projeto está disponível na URL do Dinabox.<br>
+                    Ex: dinabox.com.br/projeto/<span class="text-orange-900 font-bold">12345</span>
+                </p>
+            </div>
         </div>
 
         <input type="file" id="file-input" accept=".csv,.xls,.xlsx" class="hidden">
