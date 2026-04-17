@@ -1,0 +1,120 @@
+# =====================================
+# 🔐 Python
+# =====================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
+*.pyo
+
+# =====================================
+# 🧠 Ambiente Virtual e Segredos
+# =====================================
+venv/
+env/
+.venv/
+.env
+.env.*
+*.env
+*.key
+*.pem
+*.secret
+docs/
+# =====================================
+# 🧠 Django Específico
+# =====================================
+.log
+.pot
+.sqlite3
+.sqlite3-journal
+db.sqlite3
+db.sqlite3-journal
+local_settings.py
+media/
+staticfiles/
+collectedstatic/   # ou staticfiles/ — como você preferir chamar
+
+# =====================================
+# 📊 Testes, Coverage e Cache
+# =====================================
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.cache/
+nosetests.xml
+*.cover
+*.py,cover
+
+# =====================================
+# 🧰 Editores / IDEs
+# =====================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.ropeproject
+
+# =====================================
+# 🖥️ Sistema Operacional
+# =====================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# =====================================
+# 📦 Builds e Pacotes
+# =====================================
+dist/
+build/
+*.egg
+*.egg-info/
+*.eggs/
+MANIFEST
+
+# =====================================
+# 🐳 Docker / Containerização (futuro)
+# =====================================
+*.pid
+*.seed
+*.pid.lock
+docker-compose.override.yml   # se você usar para dev local
+
+# =====================================
+# 🔄 Celery / Redis / Tarefas (futuro)
+# =====================================
+celerybeat-schedule
+celerybeat.pid
+celeryd.pid
+
+# =====================================
+# 📁 Temporários / Logs / Cache
+# =====================================
+tmp/
+temp/
+logs/
+*.bak
+*.backup
+*.tmp
+
+# =====================================
+# ⚠️ Migrations cache (opcional — cuidado!)
+# =====================================
+**/migrations/__pycache__/
+
+# IMPORTANTE: NUNCA ignore as migrations em si!
+# apps/*/migrations/*.py  ← devem ser versionadas
+
+# =====================================
+# 📊 Banco de dados futuro / backups
+# =====================================
+*.sql
+*.sql.gz
+*.dump
+backups/
+features/

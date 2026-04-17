@@ -1,0 +1,88 @@
+{% extends "base/base.html" %}
+
+{% block title %}Projetos Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Projetos Dinabox</h1>
+        <p class="page-subtitle">Consulta em tempo real usando sua sessao Dinabox.</p>
+    </div>
+    <div class="user-meta" style="gap: 0.5rem;">
+        <a href="{% url 'integracoes:dinabox-clientes-list' %}" class="btn btn-outline">Clientes</a>
+        <a href="{% url 'integracoes:dinabox-materiais-list' %}" class="btn btn-outline">Materiais</a>
+        <a href="{% url 'integracoes:dinabox-etiquetas-list' %}" class="btn btn-outline">Etiquetas</a>
+        <a href="{% url 'integracoes:dinabox-lotes-list' %}" class="btn btn-outline">Ver Lotes</a>
+        <a href="{% url 'integracoes:dinabox-capacidades' %}" class="btn btn-outline">Capacidades API</a>
+        <a href="{% url 'integracoes:dinabox-conectar' %}" class="btn btn-outline">Status Conta Tecnica</a>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 1rem; padding: 1rem;">
+    <form method="get" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: end;">
+        <div style="flex: 1; min-width: 220px;">
+            <label for="id_s" style="display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 600;">Buscar</label>
+            <input id="id_s" type="text" name="s" value="{{ search }}" placeholder="Projeto ou cliente"
+                   style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem;">
+        </div>
+
+        <div style="min-width: 180px;">
+            <label for="id_status" style="display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 600;">Status</label>
+            <select id="id_status" name="status" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem; background: #fff;">
+                <option value="">Todos</option>
+                <option value="rascunho" {% if status == 'rascunho' %}selected{% endif %}>Rascunho</option>
+                <option value="producao" {% if status == 'producao' %}selected{% endif %}>Producao</option>
+                <option value="fechado" {% if status == 'fechado' %}selected{% endif %}>Fechado</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Filtrar</button>
+    </form>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Projeto</th>
+                <th>Cliente</th>
+                <th>Status</th>
+                <th>Criacao</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for projeto in response.projects %}
+            <tr>
+                <td class="mono">{{ projeto.project_id }}</td>
+                <td>
+                    <div style="font-weight: 700;">{{ projeto.project_description|default:"-" }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Autor: {{ projeto.project_author_name|default:"-" }}</div>
+                </td>
+                <td>{{ projeto.project_client_name|default:"-" }}</td>
+                <td><span class="badge badge-neutral">{{ projeto.project_status|default:"-" }}</span></td>
+                <td style="font-size: 0.85rem; color: var(--text-muted);">{{ projeto.project_created|default:"-" }}</td>
+                <td>
+                    <a href="{% url 'integracoes:dinabox-projeto-detail' projeto.project_id %}" class="btn btn-outline" style="padding: 0.35rem 0.6rem;">Detalhes</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="padding: 2rem; text-align: center; color: var(--text-muted);">Nenhum projeto encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if response.total > response.quantity %}
+<div style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.5rem;">
+    {% if response.page > 1 %}
+    <a class="btn btn-outline" href="?p={{ response.page|add:'-1' }}{% if search %}&s={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Anterior</a>
+    {% endif %}
+    <span class="btn btn-outline" style="pointer-events: none;">Pagina {{ response.page }}</span>
+    <a class="btn btn-outline" href="?p={{ response.page|add:'1' }}{% if search %}&s={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Proxima</a>
+</div>
+{% endif %}
+{% endblock %}

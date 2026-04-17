@@ -1,0 +1,779 @@
+{% extends "base/base.html" %}
+{% block title %}PCP — Roteiro de Produção | Tarugo{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    .pcp-shell {
+        background:
+            radial-gradient(circle at top right, rgba(249, 115, 22, 0.14), transparent 28%),
+            linear-gradient(180deg, #111827 0%, #0b1220 100%);
+        border: 1px solid rgba(71, 85, 105, 0.45);
+        border-radius: 28px;
+        padding: 2rem;
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+    }
+    .card {
+        background: rgba(15, 23, 42, 0.92) !important;
+        border: 1px solid rgba(71, 85, 105, 0.45) !important;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+    }
+    .tab-button { transition: var(--transition); }
+    .tab-button:hover { background: rgba(30, 41, 59, 0.78); }
+    .tab-button-active {
+        background: rgba(249, 115, 22, 0.12);
+        border-color: #f97316 !important;
+        color: #fb923c !important;
+    }
+    .rota-chip {
+        display: inline-flex;
+        align-items: center;
+        background-color: rgba(251, 191, 36, 0.14);
+        color: #fde68a;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-right: 4px;
+        border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+    #drop-area { transition: var(--transition); }
+    #drop-area {
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.94));
+    }
+    #drop-area.dragover { border-color: var(--accent); background: rgba(249, 115, 22, 0.12); }
+    #stats .card { min-height: 148px; }
+    .summary-strip {
+        background: linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(30, 41, 59, 0.82));
+        border: 1px solid rgba(249, 115, 22, 0.28);
+        color: #e5e7eb;
+    }
+    .bg-white { background-color: var(--surface) !important; }
+    .text-gray-800 { color: var(--text) !important; }
+    .text-gray-600 { color: var(--text-muted) !important; }
+    .text-gray-500 { color: var(--text-dim) !important; }
+    .border-gray-100, .border-gray-200, .border-gray-300 { border-color: var(--border) !important; }
+    .bg-gray-50 { background-color: var(--surface-raised) !important; }
+    .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+    #resultado table thead { background: rgba(15, 23, 42, 0.96); }
+    #resultado table tbody tr:nth-child(odd) { background: rgba(15, 23, 42, 0.62); }
+    #resultado table tbody tr:nth-child(even) { background: rgba(30, 41, 59, 0.48); }
+    #resultado table tbody tr:hover { background: rgba(249, 115, 22, 0.12); }
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 90;
+        padding: 1rem;
+    }
+    .modal-card {
+        width: min(1200px, 95vw);
+        max-height: 92vh;
+        overflow-y: auto;
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 18px;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
+    }
+    #modal-retorno .border-gray-800 { border-color: #e2e8f0 !important; }
+    #modal-retorno .card {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: none;
+    }
+    #modal-retorno .text-gray-100 { color: #0f172a !important; }
+    #modal-retorno .text-gray-400,
+    #modal-retorno .text-gray-500 { color: #475569 !important; }
+    #modal-retorno table thead tr { background: #e5e7eb; }
+    #modal-retorno table thead th {
+        color: #4b5563;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+    #modal-retorno table tbody td { color: #1f2937; }
+    #modal-retorno table tbody tr:nth-child(odd) { background: #ffffff; }
+    #modal-retorno table tbody tr:nth-child(even) { background: #f8fafc; }
+    #modal-retorno table tbody tr:hover { background: #eef2ff; }
+    #modal-retorno .text-green-400 { color: #15803d !important; }
+    #modal-retorno .text-yellow-400 { color: #b45309 !important; }
+    #modal-retorno .text-gray-400.text-xs { color: #475569 !important; }
+    #modal-retorno .mono { color: #111827; }
+    #modal-retorno .bg-blue-700 { background-color: #1d4ed8 !important; }
+    #modal-retorno .bg-gray-700 { background-color: #334155 !important; }
+    #modal-retorno .bg-indigo-700 { background-color: #4338ca !important; }
+    #modal-retorno .text-orange-500 { color: #ea580c !important; }
+    #modal-retorno .p-6.space-y-6 { background: #f8fafc; }
+    #modal-retorno .p-6.border-b {
+        background: linear-gradient(90deg, #eff6ff, #f8fafc);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pcp-shell">
+<input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+<input type="hidden" id="url-processar" value="{% url 'pcp:processar' %}">
+<input type="hidden" id="url-historico" value="{% url 'pcp:historico' %}">
+<input type="hidden" id="url-liberar-base" value="{% url 'pcp:liberar' pid='PID_PLACEHOLDER' %}">
+<input type="hidden" id="url-bloquear-base" value="{% url 'pcp:bloquear' pid='PID_PLACEHOLDER' %}">
+<input type="hidden" id="url-reabrir-base" value="{% url 'pcp:reabrir' pid='PID_PLACEHOLDER' %}">
+<input type="hidden" id="url-download-base" value="{% url 'pcp:download' pid='PID_PLACEHOLDER' %}">
+<input type="hidden" id="url-liberar-viagem-base" value="{% url 'pcp:liberar-viagem' pid='PID_PLACEHOLDER' %}">
+<input type="hidden" id="url-remover-base" value="{% url 'pcp:remover' pid='PID_PLACEHOLDER' %}">
+<input type="hidden" id="url-retorno-base" value="{% url 'pcp:retorno' pid='PID_PLACEHOLDER' %}">
+<input type="hidden" id="url-retorno-relatorio-base" value="{% url 'pcp:retorno-relatorio' pid='PID_PLACEHOLDER' %}">
+<input type="hidden" id="can-manage-pcp" value="{{ pode_gerenciar_pcp|yesno:'true,false' }}">
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Roteiro de Produção</h1>
+        <p class="page-subtitle">Processamento de arquivos Dinabox e geração de fluxos</p>
+    </div>
+    <div id="clock" class="mono text-accent" style="font-size: 0.9rem; font-weight: 600;"></div>
+</div>
+
+{% if pode_gerenciar_pcp %}
+<!-- Tabs -->
+<div class="flex border-b border-gray-200 mb-8">
+    <button onclick="showTab(0)" id="tab-0"
+            class="tab-button px-8 py-4 font-bold text-sm border-b-2 border-orange-500 text-orange-500 display uppercase tracking-wider">
+        <i class="fas fa-upload mr-2"></i> Processar Novo
+    </button>
+    <button onclick="showTab(1)" id="tab-1"
+            class="tab-button px-8 py-4 font-bold text-sm text-gray-500 hover:text-gray-300 display uppercase tracking-wider">
+        <i class="fas fa-history mr-2"></i> Histórico
+    </button>
+    <a href="{% url 'estoque:lista_reservas' %}" id="tab-2"
+            class="tab-button px-8 py-4 font-bold text-sm text-gray-500 hover:text-gray-300 display uppercase tracking-wider">
+        <i class="fas fa-calendar-check mr-2"></i> Reservas
+    </a>
+</div>
+
+<!-- TAB 1: UPLOAD -->
+<div id="tab-content-0" class="tab-content">
+    <div class="card p-8">
+        <div id="drop-area"
+             class="border-2 border-dashed border-gray-300 hover:border-orange-500 rounded-2xl p-16 text-center cursor-pointer mb-8">
+            <i class="fas fa-cloud-upload-alt text-6xl text-gray-300 mb-4"></i>
+            <p class="text-lg font-medium text-gray-200">Arraste o arquivo ou clique para selecionar</p>
+            <p class="text-sm text-gray-500 mt-2">Formatos aceitos: CSV, XLS ou XLSX</p>
+            <div id="file-name" class="mt-6 text-orange-500 font-bold mono"></div>
+        </div>
+
+        <input type="file" id="file-input" accept=".csv,.xls,.xlsx" class="hidden">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 mono">
+                    Número do Lote <span class="text-orange-500">*</span>
+                </label>
+                <input type="number" id="input-lote" min="1" placeholder="Ex: 305"
+                       class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-xl font-bold text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                       oninput="verificarPronto()">
+            </div>
+            <button id="btn-processar"
+                    onclick="processarArquivo()"
+                    disabled
+                    class="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-800 disabled:text-gray-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all display uppercase tracking-widest">
+                <i class="fas fa-play"></i>
+                Gerar Roteiro
+            </button>
+        </div>
+
+        <div id="progress-wrap" class="hidden mt-8">
+            <div class="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div id="progress-fill" class="h-full bg-orange-500 rounded-full w-0 transition-all duration-300"></div>
+            </div>
+            <p id="progress-label" class="text-center text-xs text-gray-500 mt-3 mono uppercase">Iniciando processamento...</p>
+        </div>
+
+        <div id="alert-err" class="hidden mt-6 bg-red-900/20 border border-red-900/50 p-4 text-red-400 rounded-xl text-sm"></div>
+        <div id="alert-ok" class="hidden mt-6 bg-green-900/20 border border-green-900/50 p-4 text-green-400 rounded-xl text-sm"></div>
+    </div>
+
+    <!-- Resultado -->
+        <div id="resultado" class="hidden mt-10 space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6" id="stats"></div>
+            <div id="process-summary" class="summary-strip hidden rounded-2xl px-6 py-4 text-sm font-medium"></div>
+
+        <div class="card p-6 flex items-center justify-between border-l-4 border-l-green-500">
+            <div>
+                <h3 class="font-bold text-gray-100 display">Processamento Concluído</h3>
+                <p class="text-gray-500 text-sm">O arquivo XLS de roteiro está pronto para download e liberação.</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="btn-download"
+                        class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all display">
+                    <i class="fas fa-download"></i> BAIXAR XLS
+                </button>
+                <button id="btn-liberar"
+                        class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all display">
+                    <i class="fas fa-unlock"></i> LIBERAR PARA BIPAGEM
+                </button>
+            </div>
+        </div>
+
+        <div class="card p-8">
+            <h3 class="font-bold text-gray-100 mb-6 display uppercase tracking-wider">Distribuição de Roteiros</h3>
+            <div id="roteiro-list" class="space-y-4"></div>
+        </div>
+
+        <div class="card p-0 overflow-hidden">
+            <div class="p-6 border-b border-gray-800">
+                <h3 class="font-bold text-gray-100 display uppercase tracking-wider">Prévia das Peças</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th>LOTE</th>
+                            <th>Descrição</th>
+                            <th>Local</th>
+                            <th>OBS</th>
+                            <th>PLANO</th>
+                            <th>ROTEIRO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previa-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 2: HISTÓRICO -->
+<div id="tab-content-1" class="tab-content hidden">
+    <div class="card p-0 overflow-hidden">
+        <div class="p-8 border-b border-gray-800">
+            <h2 class="text-lg font-bold text-gray-100 display uppercase tracking-wider">Histórico de Processamentos</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Arquivo / Lote</th>
+                        <th>Data</th>
+                        <th>Peças</th>
+                        <th>Bipagem</th>
+                        <th>Viagem</th>
+                        <th style="text-align: right;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="hist-tbody"></tbody>
+            </table>
+        </div>
+        <div id="no-historico" class="hidden py-24 text-center text-gray-500">
+            <i class="fas fa-inbox text-5xl mb-4 opacity-20"></i>
+            <p class="mono uppercase text-xs">Nenhum processamento encontrado</p>
+        </div>
+    </div>
+</div>
+
+<div id="modal-retorno" class="modal-overlay hidden">
+    <div class="modal-card">
+        <div class="p-6 border-b border-gray-800 flex items-center justify-between gap-4">
+            <div>
+                <h3 class="text-lg font-bold text-gray-100 display uppercase tracking-wider">Retorno da Bipagem</h3>
+                <p id="retorno-subtitle" class="text-sm text-gray-400 mt-1">Lote</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btn-retorno-relatorio"
+                        class="bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all display">
+                    <i class="fas fa-file-csv mr-1"></i>RELATORIO CSV
+                </button>
+                <button onclick="fecharModalRetorno()"
+                        class="bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all display">
+                    <i class="fas fa-times mr-1"></i>FECHAR
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <div id="retorno-indicadores" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4"></div>
+
+            <div class="card p-0 overflow-hidden">
+                <div class="p-4 border-b border-gray-800">
+                    <h4 class="font-bold text-gray-100 display uppercase tracking-wider">Preview das Pecas</h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Descricao</th>
+                                <th>Ambiente</th>
+                                <th>Modulo</th>
+                                <th>Plano</th>
+                                <th>Produzida / Planejada</th>
+                                <th>Faltam</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="retorno-preview-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card p-0 overflow-hidden">
+                <div class="p-4 border-b border-gray-800">
+                    <h4 class="font-bold text-gray-100 display uppercase tracking-wider">Log de Bipagem</h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th>Momento</th>
+                                <th>Tipo</th>
+                                <th>Peca</th>
+                                <th>Usuario</th>
+                                <th>Qtd</th>
+                                <th>Localizacao</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="retorno-log-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card p-8">
+    <h2 class="text-lg font-bold text-gray-100 display uppercase tracking-wider">Acesso Restrito</h2>
+    <p class="text-gray-400 mt-3">
+        A raiz do PCP é restrita para usuários autorizados (PCP, TI ou administradores).
+    </p>
+    <p class="text-gray-500 mt-2 text-sm">
+        Preview simples: este painel mostra somente esta mensagem de acesso. Para gestão de lotes, solicite liberação de perfil.
+    </p>
+</div>
+{% endif %}
+
+</div>
+{% if pode_gerenciar_pcp %}
+<script>
+    const CONFIG = {
+        urls: {
+            processar:    document.getElementById('url-processar').value,
+            historico:    document.getElementById('url-historico').value,
+            liberarBase:  document.getElementById('url-liberar-base').value,
+            bloquearBase: document.getElementById('url-bloquear-base').value,
+            reabrirBase:  document.getElementById('url-reabrir-base').value,
+            downloadBase: document.getElementById('url-download-base').value,
+            liberarViagemBase: document.getElementById('url-liberar-viagem-base').value,
+            removerBase: document.getElementById('url-remover-base').value,
+            retornoBase: document.getElementById('url-retorno-base').value,
+            retornoRelatorioBase: document.getElementById('url-retorno-relatorio-base').value,
+        },
+        csrf: () => document.getElementById('csrf-token').value,
+    };
+
+    let arquivoAtual = null;
+    let pidAtual = null;
+    const CAN_MANAGE_PCP = document.getElementById('can-manage-pcp').value === 'true';
+
+    // Clock
+    const clockEl = document.getElementById('clock');
+    setInterval(() => { clockEl.textContent = new Date().toLocaleString('pt-BR'); }, 1000);
+    clockEl.textContent = new Date().toLocaleString('pt-BR');
+
+    // Tabs
+    function showTab(tabIndex) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`tab-content-${tabIndex}`).classList.remove('hidden');
+        document.querySelectorAll('.tab-button').forEach((btn, i) => {
+            btn.classList.toggle('border-orange-500', i === tabIndex);
+            btn.classList.toggle('text-orange-500', i === tabIndex);
+            btn.classList.toggle('text-gray-500', i !== tabIndex);
+            btn.classList.toggle('tab-button-active', i === tabIndex);
+        });
+        if (tabIndex === 1) carregarHistorico();
+    }
+
+    // Drag & Drop
+    const dropArea  = document.getElementById('drop-area');
+    const fileInput = document.getElementById('file-input');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
+        dropArea.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); })
+    );
+    dropArea.addEventListener('dragover',  () => dropArea.classList.add('dragover'));
+    ['dragleave', 'drop'].forEach(ev => dropArea.addEventListener(ev, () => dropArea.classList.remove('dragover')));
+    dropArea.addEventListener('drop', e => {
+        if (e.dataTransfer.files?.[0]) selecionarArquivo(e.dataTransfer.files[0]);
+    });
+    dropArea.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files[0]) selecionarArquivo(fileInput.files[0]);
+    });
+
+    function selecionarArquivo(file) {
+        arquivoAtual = file;
+        document.getElementById('file-name').textContent = file.name;
+        verificarPronto();
+    }
+
+    function verificarPronto() {
+        const loteValido = document.getElementById('input-lote').value && parseInt(document.getElementById('input-lote').value) > 0;
+        document.getElementById('btn-processar').disabled = !(arquivoAtual && loteValido);
+    }
+
+    // Processar
+    async function processarArquivo() {
+        if (!arquivoAtual || !document.getElementById('input-lote').value) return;
+
+        const formData = new FormData();
+        formData.append('arquivo', arquivoAtual);
+        formData.append('lote', document.getElementById('input-lote').value);
+
+        document.getElementById('btn-processar').disabled = true;
+        document.getElementById('progress-wrap').classList.remove('hidden');
+        document.getElementById('alert-err').classList.add('hidden');
+        document.getElementById('resultado').classList.add('hidden');
+
+        try {
+            const response = await fetch(CONFIG.urls.processar, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CONFIG.csrf() },
+                body: formData,
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.erro || 'Erro ao processar arquivo');
+            exibirResultado(data);
+        } catch (err) {
+            const errDiv = document.getElementById('alert-err');
+            errDiv.textContent = err.message;
+            errDiv.classList.remove('hidden');
+        } finally {
+            document.getElementById('btn-processar').disabled = false;
+            document.getElementById('progress-wrap').classList.add('hidden');
+        }
+    }
+
+    function exibirResultado(data) {
+        pidAtual = data.pid;
+        document.getElementById('resultado').classList.remove('hidden');
+        const resumoProcessamento = data.resumo_processamento || {};
+        const consolidado = resumoProcessamento.pecas_consolidadas ?? 0;
+        const variacao = Math.abs(resumoProcessamento.variacao ?? 0);
+
+        document.getElementById('stats').innerHTML = `
+            <div class="card p-6">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Lote Gerado</p>
+                <p class="text-3xl font-bold text-orange-500 mono">${data.lote}</p>
+            </div>
+            <div class="card p-6">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Total de Peças</p>
+                <p class="text-3xl font-bold text-gray-100 mono">${data.total}</p>
+            </div>
+            <div class="card p-6">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Entrada → Saída</p>
+                <p class="text-2xl font-bold text-gray-100 mono">${resumoProcessamento.total_entrada ?? data.total} → ${resumoProcessamento.total_saida ?? data.total}</p>
+            </div>
+            <div class="card p-6">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Ripas Consolidadas</p>
+                <p class="text-3xl font-bold text-gray-100 mono">${resumoProcessamento.ripas_geradas ?? 0}</p>
+            </div>
+            <div class="card p-6">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Peças Agrupadas</p>
+                <p class="text-3xl font-bold text-gray-100 mono">${consolidado}</p>
+            </div>
+        `;
+
+        const processSummary = document.getElementById('process-summary');
+        processSummary.textContent = `Entraram ${resumoProcessamento.total_entrada ?? data.total} peças, saíram ${resumoProcessamento.total_saida ?? data.total}, ${consolidado} peças originais foram consolidadas em ${resumoProcessamento.ripas_geradas ?? 0} ripas e a redução líquida foi de ${variacao} linhas.`;
+        processSummary.classList.remove('hidden');
+
+        document.getElementById('btn-download').onclick = () =>
+            window.location.href = CONFIG.urls.downloadBase.replace('PID_PLACEHOLDER', data.pid);
+
+        document.getElementById('btn-liberar').onclick = () => liberarLote(data.pid);
+
+        document.getElementById('roteiro-list').innerHTML = data.resumo.map(r => `
+            <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl border border-gray-800">
+                <span class="font-bold text-gray-300">${r.roteiro}</span>
+                <span class="bg-orange-500/10 text-orange-500 px-3 py-1 rounded-lg font-bold mono">${r.qtd}</span>
+            </div>
+        `).join('');
+
+        document.getElementById('previa-tbody').innerHTML = data.previa.map(row => `
+            <tr>
+                <td class="mono font-bold text-orange-500">${row.LOTE || ''}</td>
+                <td>${row.DESCRICAO_DA_PECA || ''}</td>
+                <td>${row.LOCAL || ''}</td>
+                <td class="text-gray-500 italic">${row.OBSERVACAO || ''}</td>
+                <td class="mono">${row.PLANO || ''}</td>
+                <td><span class="rota-chip">${row.ROTEIRO || ''}</span></td>
+            </tr>
+        `).join('');
+
+        window.scrollTo({ top: document.getElementById('resultado').offsetTop - 100, behavior: 'smooth' });
+    }
+
+    // Histórico
+    async function carregarHistorico() {
+        const tbody   = document.getElementById('hist-tbody');
+        const noHist  = document.getElementById('no-historico');
+
+        try {
+            const response = await fetch(CONFIG.urls.historico);
+            const data = await response.json();
+
+            if (!data.length) {
+                noHist.classList.remove('hidden');
+                tbody.innerHTML = '';
+                return;
+            }
+
+            noHist.classList.add('hidden');
+            tbody.innerHTML = data.map(r => `
+                <tr>
+                    <td class="mono text-xs text-gray-500">${r.id}</td>
+                    <td class="font-medium">
+                        ${r.nome_arquivo}
+                        <br><span class="text-orange-500 text-xs font-bold mono">LOTE ${r.lote}</span>
+                    </td>
+                    <td class="text-gray-500 text-xs">${new Date(r.data).toLocaleString('pt-BR')}</td>
+                    <td class="mono font-bold">${r.total_pecas}</td>
+                    <td>${_badgeBipagem(r)}</td>
+                    <td>${_badgeViagem(r)}</td>
+                    <td style="text-align: right;">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="window.location.href='${CONFIG.urls.downloadBase.replace("PID_PLACEHOLDER", r.id)}'"
+                                    class="p-2 text-gray-400 hover:text-white transition-colors" title="Download XLS">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button onclick="abrirRetorno('${r.id}')"
+                                    class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                                    title="Ver retorno da bipagem">
+                                <i class="fas fa-rotate-left mr-1"></i>RETORNO
+                            </button>
+                            ${_acoesBipagem(r)}
+                            ${CAN_MANAGE_PCP && !r.liberado_viagem && r.liberado ? `
+                                <button onclick="liberarViagem('${r.id}')"
+                                        class="bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                                        title="Liberar para viagem">
+                                    <i class="fas fa-truck mr-1"></i>VIAGEM
+                                </button>
+                            ` : ''}
+                            ${r.pode_remover ? `
+                                <button onclick="removerLote('${r.id}')"
+                                        class="bg-gray-800 hover:bg-red-900 text-red-300 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                                        title="Remover lote com auditoria">
+                                    <i class="fas fa-trash mr-1"></i>REMOVER
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error('Erro ao carregar historico:', err);
+        }
+    }
+
+    function _badgeBipagem(r) {
+        if (r.liberado) return '<span class="text-green-500 text-xs font-bold"><i class="fas fa-check-circle mr-1"></i>Liberado</span>';
+        return '<span class="text-gray-600 text-xs font-bold">Pendente</span>';
+    }
+
+    function _badgeViagem(r) {
+        if (r.liberado_viagem) return '<span class="text-blue-400 text-xs font-bold"><i class="fas fa-truck mr-1"></i>Liberado</span>';
+        return '<span class="text-gray-600 text-xs font-bold">—</span>';
+    }
+
+    function _acoesBipagem(r) {
+        if (!CAN_MANAGE_PCP) return '';
+        if (!r.liberado) {
+            return `<button onclick="liberarLote('${r.id}')"
+                class="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
+                <i class="fas fa-unlock mr-1"></i>LIBERAR
+            </button>`;
+        }
+        return `<button onclick="bloquearLote('${r.id}')"
+            class="bg-red-800 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+            title="Bloquear bipagem deste lote">
+            <i class="fas fa-lock mr-1"></i>BLOQUEAR
+        </button>`;
+    }
+
+    async function abrirRetorno(pid) {
+        const url = CONFIG.urls.retornoBase.replace('PID_PLACEHOLDER', pid);
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.erro || 'Falha ao carregar retorno');
+
+            const lote = data.lote || {};
+            const indicadores = data.indicadores || {};
+            const preview = data.preview || [];
+            const log = data.log || [];
+            const logBipagem = log.filter(item => item.tipo === 'BIPAGEM');
+            const logEstorno = log.filter(item => item.tipo === 'ESTORNO');
+
+            document.getElementById('retorno-subtitle').textContent =
+                `PID ${lote.pid || '-'} | Lote ${lote.lote || '-'} | Cliente ${lote.cliente_nome || '-'}`;
+
+            document.getElementById('btn-retorno-relatorio').onclick = () => {
+                window.location.href = CONFIG.urls.retornoRelatorioBase.replace('PID_PLACEHOLDER', pid);
+            };
+
+            document.getElementById('retorno-indicadores').innerHTML = `
+                <div class="card p-4">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Status</p>
+                    <p class="text-lg font-bold text-orange-500 mono">${_statusRetornoLabel(indicadores.status_retorno)}</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Concluido</p>
+                    <p class="text-2xl font-bold text-gray-100 mono">${indicadores.percentual_concluido ?? 0}%</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Produzido</p>
+                    <p class="text-2xl font-bold text-gray-100 mono">${indicadores.total_produzida ?? 0} / ${indicadores.total_planejada ?? 0}</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Pecas</p>
+                    <p class="text-lg font-bold text-gray-100 mono">${indicadores.pecas_finalizadas ?? 0} finalizadas | ${indicadores.pecas_pendentes ?? 0} pendentes</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Eventos</p>
+                    <p class="text-lg font-bold text-gray-100 mono">${indicadores.total_bipagens ?? 0} bipagens | ${indicadores.total_estornos ?? 0} estornos</p>
+                </div>
+            `;
+
+            document.getElementById('retorno-preview-body').innerHTML = preview.length
+                ? preview.map(item => `
+                    <tr>
+                        <td class="mono text-xs">${item.codigo_peca || ''}</td>
+                        <td>${item.descricao || ''}</td>
+                        <td>${item.ambiente || ''}</td>
+                        <td>${item.modulo || ''}</td>
+                        <td class="mono">${item.plano || ''}</td>
+                        <td class="mono">${item.quantidade_produzida || 0} / ${item.quantidade_planejada || 0}</td>
+                        <td class="mono">${item.faltam || 0}</td>
+                        <td>${_badgeStatusPeca(item.status)}</td>
+                    </tr>
+                `).join('')
+                : '<tr><td colspan="8" class="text-center text-gray-500 py-6">Sem pecas neste lote.</td></tr>';
+
+            const htmlBipagem = logBipagem.map(item => `
+                    <tr>
+                        <td class="mono text-xs">${new Date(item.momento).toLocaleString('pt-BR')}</td>
+                        <td>${item.tipo || ''}</td>
+                        <td class="mono">${item.codigo_peca || ''}</td>
+                        <td>${item.usuario || ''}</td>
+                        <td class="mono">${item.quantidade || 0}</td>
+                        <td>${item.localizacao || '-'}</td>
+                        <td>${item.motivo || '-'}</td>
+                    </tr>
+                `).join('');
+
+            const htmlEstornoHeader = logEstorno.length
+                ? `
+                    <tr>
+                        <td colspan="7" class="text-xs font-bold text-orange-500 uppercase tracking-wider py-3">
+                            Estornos de peça
+                        </td>
+                    </tr>
+                `
+                : '';
+
+            const htmlEstorno = logEstorno.map(item => `
+                    <tr>
+                        <td class="mono text-xs">${new Date(item.momento).toLocaleString('pt-BR')}</td>
+                        <td>${item.tipo || ''}</td>
+                        <td class="mono">${item.codigo_peca || ''}</td>
+                        <td>${item.usuario || ''}</td>
+                        <td class="mono">${item.quantidade || 0}</td>
+                        <td>${item.localizacao || '-'}</td>
+                        <td>${item.motivo || '-'}</td>
+                    </tr>
+                `).join('');
+
+            document.getElementById('retorno-log-body').innerHTML = log.length
+                ? `${htmlBipagem}${htmlEstornoHeader}${htmlEstorno}`
+                : '<tr><td colspan="7" class="text-center text-gray-500 py-6">Sem eventos de bipagem para este lote.</td></tr>';
+
+            document.getElementById('modal-retorno').classList.remove('hidden');
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    function fecharModalRetorno() {
+        document.getElementById('modal-retorno').classList.add('hidden');
+    }
+
+    function _statusRetornoLabel(status) {
+        if (status === 'concluido') return 'Concluído';
+        if (status === 'em_producao') return 'Em produção';
+        if (status === 'pendente') return 'Pendente';
+        if (status === 'sem_pecas') return 'Sem peças';
+        return 'Não informado';
+    }
+
+    function _badgeStatusPeca(status) {
+        if (status === 'finalizado') return '<span class="text-green-400 text-xs font-bold">Finalizado</span>';
+        if (status === 'em_producao') return '<span class="text-yellow-400 text-xs font-bold">Em produção</span>';
+        return '<span class="text-gray-400 text-xs font-bold">Pendente</span>';
+    }
+
+    // Ações
+    async function liberarLote(pid) {
+        if (!confirm('Liberar este lote para bipagem?')) return;
+        await _postLote(CONFIG.urls.liberarBase.replace('PID_PLACEHOLDER', pid), 'liberado', pid);
+    }
+
+    async function bloquearLote(pid) {
+        const motivo = prompt('Motivo do bloqueio (opcional):') ?? '';
+        if (motivo === null) return; // cancelou
+        const url = CONFIG.urls.bloquearBase.replace('PID_PLACEHOLDER', pid);
+        await _postLote(url + `?motivo=${encodeURIComponent(motivo)}`, 'bloqueado', pid);
+    }
+
+    async function liberarViagem(pid) {
+        if (!confirm('Liberar este lote para viagem?')) return;
+        await _postLote(CONFIG.urls.liberarViagemBase.replace('PID_PLACEHOLDER', pid), 'liberado para viagem', pid);
+    }
+
+    async function removerLote(pid) {
+        const motivo = prompt('Motivo da remocao (obrigatorio para auditoria):');
+        if (motivo === null) return;
+        if (!motivo.trim() || motivo.trim().length < 3) {
+            alert('Informe um motivo com pelo menos 3 caracteres.');
+            return;
+        }
+        const confirmado = confirm(`Remover o lote ${pid} do historico? Esta acao apaga o roteiro salvo e os dados operacionais vinculados.`);
+        if (!confirmado) return;
+        const url = CONFIG.urls.removerBase.replace('PID_PLACEHOLDER', pid);
+        await _postLote(url + `?motivo=${encodeURIComponent(motivo.trim())}`, 'remover', pid);
+    }
+
+    async function _postLote(url, acao, pid) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CONFIG.csrf() },
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.erro || `Erro ao ${acao} lote`);
+            carregarHistorico();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+</script>
+{% else %}
+<script>
+    const clockEl = document.getElementById('clock');
+    setInterval(() => { clockEl.textContent = new Date().toLocaleString('pt-BR'); }, 1000);
+    clockEl.textContent = new Date().toLocaleString('pt-BR');
+</script>
+{% endif %}
+{% endblock %}

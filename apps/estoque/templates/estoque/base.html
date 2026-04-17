@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Estoque{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --border: #d8d5cc;
+      --border-strong: #a8a49a;
+      --text: #1a1917;
+      --text-muted: #6b6760;
+      --accent: #c8401a;
+      --accent-light: #fdf0ec;
+      --green: #1a6b3a;
+      --green-light: #edf7f1;
+      --yellow: #b87a00;
+      --yellow-light: #fef9ec;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--text);
+      color: #fff;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header-brand::before {
+      content: '';
+      display: block;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    .header-nav {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .header-nav a {
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-family: var(--mono);
+      padding: 0.35rem 0.75rem;
+      border-radius: 3px;
+      transition: color 0.15s, background 0.15s;
+      letter-spacing: 0.04em;
+    }
+
+    .header-nav a:hover,
+    .header-nav a.active {
+      color: #fff;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .header-user {
+      font-size: 0.75rem;
+      color: #888;
+      font-family: var(--mono);
+    }
+
+    /* ── LAYOUT ── */
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      margin-top: 0.25rem;
+    }
+
+    /* ── ALERTAS ── */
+    .messages { margin-bottom: 1.25rem; }
+
+    .alert {
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      border-left: 3px solid;
+      margin-bottom: 0.5rem;
+    }
+
+    .alert-success { background: var(--green-light); border-color: var(--green); color: var(--green); }
+    .alert-error   { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+    .alert-warning { background: var(--yellow-light); border-color: var(--yellow); color: var(--yellow); }
+
+    /* ── BOTÕES ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      font-family: var(--sans);
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--text);
+      color: #fff;
+      border-color: var(--text);
+    }
+    .btn-primary:hover { background: #333; }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border-strong);
+    }
+    .btn-outline:hover { background: var(--surface); }
+
+    .btn-danger {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn-danger:hover { opacity: 0.88; }
+
+    /* ── CARDS / SUPERFÍCIES ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    /* ── TABELA ── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.855rem;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-size: 0.72rem;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    tbody td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #fafaf8; }
+
+    .mono { font-family: var(--mono); font-size: 0.82em; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      font-family: var(--mono);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-entrada  { background: var(--green-light);  color: var(--green); }
+    .badge-saida    { background: var(--accent-light);  color: var(--accent); }
+    .badge-ajuste   { background: var(--yellow-light);  color: var(--yellow); }
+    .badge-warning  { background: var(--yellow-light);  color: var(--yellow); }
+
+    /* ── FORMULÁRIOS ── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2rem;
+      max-width: 560px;
+    }
+
+    .form-group { margin-bottom: 1.25rem; }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+      appearance: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--text);
+      background: #fff;
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── STAT CARDS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.1rem 1.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .stat-card.alert-card {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .stat-card.alert-card .stat-value { color: var(--accent); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      padding: 3rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .empty-state strong { display: block; font-size: 1rem; color: var(--text); margin-bottom: 0.35rem; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<header>
+  <div class="header-brand">Estoque</div>
+  <nav class="header-nav">
+    <a href="{% url 'estoque:dashboard_operacional' %}" {% if request.resolver_match.url_name == 'dashboard_operacional' %}class="active"{% endif %}>Dashboard</a>
+    <a href="{% url 'estoque:lista_produtos' %}" {% if request.resolver_match.url_name == 'lista_produtos' %}class="active"{% endif %}>Produtos</a>
+    {% if pode_movimentar or user.is_superuser %}
+    <a href="{% url 'estoque:movimentacao_create' %}" {% if request.resolver_match.url_name == 'movimentacao_create' %}class="active"{% endif %}>Movimentar</a>
+    {% endif %}
+    {% if pode_cadastrar or user.is_superuser %}
+    <a href="{% url 'estoque:produto_create' %}" {% if request.resolver_match.url_name == 'produto_create' %}class="active"{% endif %}>Novo produto</a>
+    {% endif %}
+  </nav>
+  <div style="display:flex; align-items:center; gap:1rem;">
+    <div class="header-user">
+      {% if user.is_authenticated %}{{ user.username }}{% else %}—{% endif %}
+    </div>
+    {% if user.is_authenticated %}
+    <form method="POST" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" style="background:none; border:none; color:#888; font-size:0.75rem; font-family:var(--mono); cursor:pointer; padding:0; letter-spacing:0.04em;">sair</button>
+    </form>
+    {% endif %}
+  </div>
+</header>
+
+<main class="page">
+
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+
+</main>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

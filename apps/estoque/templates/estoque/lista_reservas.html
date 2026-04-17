@@ -1,0 +1,137 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Reservas - Tarugo{% endblock %}
+
+{% block extra_css %}
+<style>
+  .reserva-list {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+  }
+  .reserva-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.1rem;
+  }
+  .reserva-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+  .reserva-title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .reserva-sub {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .meta-strip {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.22rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+  .reserva-actions {
+    display: inline-flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .status-pill.ativa {
+    background: #ebfbee;
+    color: #2b8a3e;
+  }
+  .status-pill.consumida {
+    background: #f1f3f5;
+    color: #495057;
+  }
+  .status-pill.cancelada {
+    background: #fff5f5;
+    color: #c92a2a;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Reservas de Materiais</h1>
+    <p class="page-subtitle">Saldo disponivel = saldo fisico - reservas ativas.</p>
+  </div>
+  <a href="{% url 'estoque:reserva_create' %}" class="btn btn-accent">Nova Reserva</a>
+</div>
+
+<div class="reserva-list">
+  {% for r in reservas %}
+  <div class="card reserva-row">
+    <div class="reserva-main">
+      <div class="reserva-title">{{ r.produto.nome }}</div>
+      <div class="reserva-sub">{{ r.produto.sku }} | {{ r.produto.categoria.nome }}</div>
+      <div class="meta-strip">
+        <span class="meta-chip">Qtd {{ r.quantidade }}</span>
+        <span class="meta-chip">Origem {{ r.get_origem_externa_display }}</span>
+        {% if r.espessura %}
+        <span class="meta-chip">{{ r.espessura }}mm</span>
+        {% endif %}
+        {% if r.referencia_externa %}
+        <span class="meta-chip">Ref {{ r.referencia_externa }}</span>
+        {% endif %}
+        {% if r.lote_pcp_id %}
+        <span class="meta-chip">Lote {{ r.lote_pcp_id }}</span>
+        {% endif %}
+        <span class="status-pill {{ r.status }}">{{ r.get_status_display }}</span>
+      </div>
+    </div>
+
+    {% if r.status == 'ativa' %}
+    <div class="reserva-actions">
+      <form method="post" action="{% url 'estoque:reserva_consumir' r.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Consumir</button>
+      </form>
+      <form method="post" action="{% url 'estoque:reserva_cancelar' r.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline">Cancelar</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="card empty-state">
+    <strong>Nenhuma reserva registrada</strong>
+    Cadastre a primeira reserva para controlar saldo comprometido.
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base/base.html" %}
+
+{% block title %}Lote Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{% url 'integracoes:dinabox-lotes-list' %}" style="text-decoration: none; color: var(--text-muted);">&larr; Voltar para lotes</a>
+        <h1 class="page-title" style="margin-top: 0.5rem;">Lote {{ lote.group_id }}</h1>
+        <p class="page-subtitle">Status: {{ lote.status|default:"-" }} | Autor: {{ lote.author|default:"-" }}</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+    <div class="card">
+        <h3 style="margin-bottom: 1rem;">Resumo</h3>
+        <div style="display: grid; gap: 0.7rem;">
+            <div style="display: flex; justify-content: space-between;"><span>Projetos</span><span class="badge badge-neutral">{{ lote.projects|length }}</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>Ultima atualizacao</span><span>{{ lote.last_update|default:"-" }}</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>Novo PCP</span><span>{% if lote.is_new_pcp %}Sim{% else %}Nao{% endif %}</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 1rem;">Projetos vinculados</h3>
+        <div class="table-container" style="box-shadow: none; border-radius: 6px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID do Projeto</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project_id in lote.projects %}
+                    <tr>
+                        <td class="mono">{{ project_id }}</td>
+                        <td>
+                            <a href="{% url 'integracoes:dinabox-projeto-detail' project_id %}" class="btn btn-outline" style="padding: 0.35rem 0.6rem;">Abrir</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">Sem projetos neste lote.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

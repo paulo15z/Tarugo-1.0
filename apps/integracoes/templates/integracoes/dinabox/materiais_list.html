@@ -1,0 +1,59 @@
+﻿{% extends "base/base.html" %}
+
+{% block title %}Materiais Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Materiais Dinabox</h1>
+    <p class="page-subtitle">Base de materiais para vinculo futuro com itens de pedido.</p>
+  </div>
+  <div class="user-meta" style="gap: .5rem;">
+    <a href="{% url 'integracoes:dinabox-clientes-list' %}" class="btn btn-outline">Clientes</a>
+    <a href="{% url 'integracoes:dinabox-etiquetas-list' %}" class="btn btn-outline">Etiquetas</a>
+    <a href="{% url 'integracoes:dinabox-capacidades' %}" class="btn btn-primary">Capacidades API</a>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 1rem;">
+  <form method="get" style="display:flex;gap:.6rem;align-items:end;flex-wrap:wrap;">
+    <div style="flex:1;min-width:220px;">
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Buscar</label>
+      <input name="s" value="{{ search }}" placeholder="Nome do material" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div style="min-width:180px;">
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Origem</label>
+      <select name="type" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;">
+        <option value="dinabox" {% if type_source == 'dinabox' %}selected{% endif %}>Dinabox</option>
+        <option value="user" {% if type_source == 'user' %}selected{% endif %}>Usuario</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+  </form>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>ID Material</th>
+        <th>Nome</th>
+        <th>Categoria</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in response.materials %}
+      <tr>
+        <td class="mono">{{ m.material_id|default:"-" }}</td>
+        <td>{{ m.name|default:"-" }}</td>
+        <td>{{ m.category_name|default:m.category|default:"-" }}</td>
+        <td>{{ m.details|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="padding:2rem;text-align:center;color:var(--text-muted);">Sem materiais retornados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

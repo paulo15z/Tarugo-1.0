@@ -1,0 +1,110 @@
+{% extends "estoque/base.html" %}
+{% block title %}Dashboard Operacional - Estoque{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard Operacional</h1>
+    <p class="page-subtitle">Sinais de ruptura, cobertura e reposicao (janela de {{ dias }} dias).</p>
+  </div>
+  <form method="get" style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+    <label for="dias" style="margin:0; font-size:0.72rem;">Janela (dias)</label>
+    <input id="dias" type="number" name="dias" min="7" max="120" value="{{ dias }}" style="width:110px;">
+    <label for="familia" style="margin:0; font-size:0.72rem;">Familia</label>
+    <select id="familia" name="familia" style="width:170px;">
+      <option value="">Todas</option>
+      {% for item in familias_disponiveis %}
+      <option value="{{ item }}" {% if familia == item %}selected{% endif %}>{{ item }}</option>
+      {% endfor %}
+    </select>
+    <label style="display:flex; align-items:center; gap:0.4rem; margin:0; font-size:0.72rem;">
+      <input type="checkbox" name="apenas_risco" value="1" {% if apenas_risco %}checked{% endif %} style="width:auto;">
+      Somente risco
+    </label>
+    <button class="btn btn-outline" type="submit">Aplicar</button>
+  </form>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Itens Monitorados</div>
+    <div class="stat-value">{{ total_itens_monitorados }}</div>
+  </div>
+  <div class="stat-card alert-card">
+    <div class="stat-label">Risco de Ruptura</div>
+    <div class="stat-value">{{ total_riscos_altos }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Necessidades de Reposicao</div>
+    <div class="stat-value">{{ total_necessidades }}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.25rem;">
+  <div style="padding:1rem 1.25rem; border-bottom:1px solid var(--border);">
+    <strong>Itens em Risco</strong>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Esp.</th>
+          <th>Disponivel</th>
+          <th>Reservado</th>
+          <th>Cobertura</th>
+          <th>Consumo Medio/dia</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in riscos_altos %}
+        <tr>
+          <td>{{ item.produto_nome }}</td>
+          <td class="mono">{% if item.espessura %}{{ item.espessura }}mm{% else %}-{% endif %}</td>
+          <td class="mono">{{ item.saldo_disponivel }}</td>
+          <td class="mono">{{ item.saldo_reservado }}</td>
+          <td class="mono">{% if item.cobertura_dias != None %}{{ item.cobertura_dias }} dias{% else %}-{% endif %}</td>
+          <td class="mono">{{ item.consumo_medio_dia }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty-state">Nenhum item em risco na janela selecionada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div style="padding:1rem 1.25rem; border-bottom:1px solid var(--border);">
+    <strong>Reposicao Recomendada</strong>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Esp.</th>
+          <th>Fisico</th>
+          <th>Alvo</th>
+          <th>Sugestao</th>
+          <th>Prioridade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in necessidades %}
+        <tr>
+          <td>{{ item.produto_nome }}</td>
+          <td class="mono">{% if item.espessura %}{{ item.espessura }}mm{% else %}-{% endif %}</td>
+          <td class="mono">{{ item.saldo_fisico }}</td>
+          <td class="mono">{{ item.alvo_recomendado }}</td>
+          <td class="mono">{{ item.quantidade_sugerida }}</td>
+          <td class="mono">{{ item.prioridade }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty-state">Nenhuma necessidade de reposicao no momento.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+﻿services:
+  web:
+    build: .
+    container_name: tarugo_web
+    environment:
+      DEFAULT_PASSWORD: "Renara.123"
+      RESET_PASSWORDS: "0"
+      RUN_ESTOQUE_SEEDS: "0"
+      PCP_BLOQUEAR_LIBERACAO_COM_RISCO_ESTOQUE: "0"
+      PCP_ESTOQUE_RISCO_JANELA_DIAS: "30"
+      DINABOX_BASE_URL: "https://www.dinabox.app"
+      DINABOX_SERVICE_USERNAME: "80385122"
+      DINABOX_SERVICE_PASSWORD: "abacatudo.renara.123"
+      DINABOX_TIMEOUT_SECONDS: "15"
+      DINABOX_VERIFY_SSL: "1"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+      - ./media:/app/media
+    restart: unless-stopped
+

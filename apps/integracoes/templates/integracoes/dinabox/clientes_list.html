@@ -1,0 +1,139 @@
+﻿{% extends "base/base.html" %}
+
+{% block title %}Clientes Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Clientes Dinabox</h1>
+    <p class="page-subtitle">Cadastro completo + indice local para busca rapida.</p>
+  </div>
+  <div class="user-meta" style="gap:.5rem;">
+    <a href="{% url 'integracoes:dinabox-clientes-list' %}?refresh=1" class="btn btn-outline">Atualizar Indice</a>
+    <a href="{% url 'integracoes:dinabox-materiais-list' %}" class="btn btn-outline">Materiais</a>
+    <a href="{% url 'integracoes:dinabox-etiquetas-list' %}" class="btn btn-outline">Etiquetas</a>
+    <a href="{% url 'integracoes:dinabox-projetos-list' %}" class="btn btn-primary">Projetos</a>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:1rem;">
+  <h3 style="margin-bottom:.8rem;">Novo cliente no Dinabox</h3>
+  <form method="post" action="{% url 'integracoes:dinabox-cliente-criar' %}" style="display:grid;grid-template-columns:repeat(4, minmax(170px,1fr));gap:.7rem;align-items:end;">
+    {% csrf_token %}
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Nome *</label>
+      <input name="customer_name" required style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Tipo</label>
+      <select name="customer_type" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;">
+        <option value="pf">PF</option>
+        <option value="pj">PJ</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Status</label>
+      <select name="customer_status" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;">
+        <option value="on">Ativo</option>
+        <option value="off">Inativo</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Emails</label>
+      <input name="customer_emails" placeholder="email1@x.com;email2@x.com" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Telefones</label>
+      <input name="customer_phones" placeholder="11999999999;1133334444" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Observacao</label>
+      <input name="customer_note" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">CPF</label>
+      <input name="customer_cpf" placeholder="000.000.000-00" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">CNPJ</label>
+      <input name="customer_cnpj" placeholder="00.000.000/0000-00" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">CEP</label>
+      <input name="address_zipcode" placeholder="00000-000" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Origem</label>
+      <input name="custom_origem" value="comercial_tarugo" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div style="grid-column:1 / span 2;">
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Endereco</label>
+      <input name="address_street" placeholder="Rua / Avenida" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Numero</label>
+      <input name="address_number" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Complemento</label>
+      <input name="address_complement" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Bairro</label>
+      <input name="address_district" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Cidade</label>
+      <input name="address_city" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">UF</label>
+      <input name="address_state" placeholder="SP" maxlength="2" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div style="grid-column:1 / span 4;display:flex;justify-content:flex-end;">
+      <button class="btn btn-accent" type="submit">Criar Cliente</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-bottom:1rem;">
+  <form method="get" style="display:flex;gap:.6rem;align-items:end;">
+    <div style="flex:1;">
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Buscar no indice local</label>
+      <input name="s" value="{{ search }}" placeholder="Nome, email, telefone ou ID" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+  </form>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Cliente</th>
+        <th>Tipo</th>
+        <th>Status</th>
+        <th>Email</th>
+        <th>Telefone</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in response.customers %}
+      <tr>
+        <td class="mono">{{ c.customer_id }}</td>
+        <td>{{ c.customer_name|default:"-" }}</td>
+        <td>{{ c.customer_type|default:"-" }}</td>
+        <td>{{ c.customer_status|default:"-" }}</td>
+        <td>{{ c.customer_emails_text|default:"-" }}</td>
+        <td>{{ c.customer_phones_text|default:"-" }}</td>
+        <td><a href="{% url 'integracoes:dinabox-cliente-detail' c.customer_id %}" class="btn btn-outline" style="padding:.35rem .6rem;">Editar</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--text-muted);">Sem clientes no indice local.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

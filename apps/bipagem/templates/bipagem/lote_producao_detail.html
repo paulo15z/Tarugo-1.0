@@ -1,0 +1,88 @@
+{% extends "bipagem/base.html" %}
+{% load static %}
+
+{% block title %}Lote {{ lote.numero_lote }} | Tarugo{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-bipada { background-color: #d4edda; color: #155724; }
+    .status-pendente { background-color: #fff3cd; color: #856404; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Lote de Produção: <strong>{{ lote.numero_lote }}</strong></h1>
+        <a href="{% url 'bipagem:index' %}" class="btn btn-secondary">← Voltar aos Lotes</a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <p><strong>Processamento PCP:</strong> {{ lote.processamento_pcp }}</p>
+            <p><strong>Data de Criação:</strong> {{ lote.data_criacao|date:"d/m/Y H:i" }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if lote.bloqueado_motivo %}
+                <div class="alert alert-danger py-2">
+                    <strong>🚫 Bloqueado:</strong> {{ lote.bloqueado_motivo }}
+                </div>
+            {% elif lote.liberado_para_bipagem %}
+                <div class="alert alert-success py-2">
+                    ✅ Lote liberado para bipagem
+                </div>
+            {% else %}
+                <div class="alert alert-warning py-2">
+                    ⏳ Aguardando liberação do PCP
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <h3>Peças do Lote ({{ total }}) — {{ percentual }}% concluído</h3>
+
+    <table class="table table-hover table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>ID Peça</th>
+                <th>Descrição</th>
+                <th>Pedido</th>
+                <th>Módulo</th>
+                <th>Status</th>
+                <th>Data Bipagem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in pecas %}
+            <tr>
+                <td><strong>{{ p.id_peca }}</strong></td>
+                <td>{{ p.descricao|truncatechars:70 }}</td>
+                <td>{{ p.modulo.ordem_producao.pedido.numero_pedido }}</td>
+                <td>{{ p.modulo.nome_modulo }}</td>
+                <td>
+                    <span class="badge {% if p.status == 'BIPADA' %}status-bipada{% else %}status-pendente{% endif %}">
+                        {{ p.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ p.data_bipagem|date:"d/m/Y H:i"|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-4">Nenhuma peça encontrada neste lote.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="mt-4">
+        <h5>Pedidos envolvidos neste lote:</h5>
+        <ul>
+            {% for pedido in pedidos %}
+                <li>Pedido {{ pedido.numero_pedido }} — {{ pedido.cliente_nome }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,224 @@
+﻿{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Nova Reserva - Tarugo{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-shell {
+    max-width: 820px;
+  }
+  .form-section {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1rem 0.45rem;
+    margin-bottom: 1rem;
+    background: var(--surface-raised);
+  }
+  .section-title {
+    margin-bottom: 0.85rem;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+  @media (max-width: 760px) {
+    .field-grid { grid-template-columns: 1fr; }
+  }
+  .context-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    padding: 0.24rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background: #fff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Nova reserva de estoque</h1>
+    <p class="page-subtitle">Reserva impacta saldo disponivel sem baixar o saldo fisico.</p>
+  </div>
+  <a href="{% url 'estoque:lista_reservas' %}" class="btn btn-outline">Voltar</a>
+</div>
+
+<div class="form-card form-shell">
+  <form method="POST">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="section-title">Origem e referencia</div>
+      <div class="field-grid">
+        <div class="form-group">
+          <label for="origem_externa">Origem</label>
+          <select name="origem_externa" id="origem_externa" required>
+            <option value="pcp">PCP</option>
+            <option value="manual">Manual</option>
+            <option value="integracao">Integracao</option>
+          </select>
+          <span class="context-chip" id="origem-chip">Fluxo PCP ativo</span>
+        </div>
+
+        <div class="form-group">
+          <label for="referencia_externa">Referencia externa</label>
+          <input type="text" name="referencia_externa" id="referencia_externa" placeholder="Ex: LOTE-2026-041 / PED-8891">
+          <p class="form-hint">Codigo usado por PCP, modulo ou pedido externo.</p>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <div class="form-group">
+          <label for="lote_pcp_id">Lote PCP</label>
+          <input type="text" name="lote_pcp_id" id="lote_pcp_id" placeholder="Ex: LOTE-2026-041">
+          <p class="form-hint">Obrigatorio quando a origem for PCP.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="modulo_id">Modulo PCP</label>
+          <input type="text" name="modulo_id" id="modulo_id" placeholder="Ex: MOD-23">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="ambiente">Ambiente / setor</label>
+        <input type="text" name="ambiente" id="ambiente" placeholder="Ex: Cozinha Inferior">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Material e quantidade</div>
+      <div class="form-group">
+        <label for="produto_id">Produto</label>
+        <select name="produto_id" id="produto_id" required>
+          <option value="">Selecione um produto...</option>
+          {% for produto in produtos %}
+          <option value="{{ produto.id }}"
+                  data-qtd="{{ produto.quantidade }}"
+                  data-sku="{{ produto.sku }}"
+                  data-familia="{{ produto.categoria.familia }}"
+                  data-espessura-unica="{{ produto.atributos_especificos.espessura|default:'' }}"
+                  {% if produto.categoria.familia == FAMILIA_MDF %}
+                  data-saldos='{ {% for saldo in produto.saldos_mdf.all %}"{{ saldo.espessura }}": {{ saldo.quantidade }}{% if not forloop.last %}, {% endif %}{% endfor %} }'
+                  {% endif %}>
+            {{ produto.nome }} - {{ produto.sku }} ({{ produto.categoria.nome }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-grid">
+        <div class="form-group" id="espessura-group" style="display: none;">
+          <label for="espessura">Espessura (MDF)</label>
+          <select name="espessura" id="espessura">
+            <option value="">Selecione a espessura...</option>
+            <option value="6">6 mm</option>
+            <option value="15">15 mm</option>
+            <option value="18">18 mm</option>
+            <option value="25">25 mm</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="quantidade">Quantidade</label>
+          <input type="number" name="quantidade" id="quantidade" min="1" step="1" required placeholder="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Observacao</div>
+      <div class="form-group">
+        <label for="observacao">Contexto operacional</label>
+        <textarea name="observacao" id="observacao" placeholder="Contexto da reserva para rastreabilidade..."></textarea>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Criar reserva</button>
+      <a href="{% url 'estoque:lista_reservas' %}" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const selectProduto = document.getElementById('produto_id');
+  const espessuraGroup = document.getElementById('espessura-group');
+  const espessuraSelect = document.getElementById('espessura');
+  const origemSelect = document.getElementById('origem_externa');
+  const loteInput = document.getElementById('lote_pcp_id');
+  const referenciaInput = document.getElementById('referencia_externa');
+  const origemChip = document.getElementById('origem-chip');
+
+  function getEspessurasDisponiveis(opt, saldos) {
+    const espUnica = (opt.dataset.espessuraUnica || '').trim();
+    if (espUnica) return [espUnica];
+    return Object.keys(saldos || {}).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+  }
+
+  function preencherSelectEspessura(espessuras) {
+    const atual = espessuraSelect.value;
+    espessuraSelect.innerHTML = '<option value=\"\">Selecione a espessura...</option>';
+    espessuras.forEach((esp) => {
+      const option = document.createElement('option');
+      option.value = esp;
+      option.textContent = `${esp} mm`;
+      espessuraSelect.appendChild(option);
+    });
+    if (espessuras.includes(atual)) {
+      espessuraSelect.value = atual;
+    }
+  }
+
+  function atualizarProdutoInfo() {
+    const opt = selectProduto.options[selectProduto.selectedIndex];
+    if (!opt || !opt.value) {
+      espessuraGroup.style.display = 'none';
+      espessuraSelect.required = false;
+      return;
+    }
+
+    const familia = (opt.dataset.familia || '').toLowerCase();
+    const isMDF = familia === 'mdf';
+    let saldos = {};
+    try { saldos = JSON.parse(opt.dataset.saldos || '{}'); } catch (e) { saldos = {}; }
+    preencherSelectEspessura(getEspessurasDisponiveis(opt, saldos));
+    espessuraGroup.style.display = isMDF ? 'block' : 'none';
+    espessuraSelect.required = isMDF;
+  }
+
+  function atualizarContextoOrigem() {
+    const origem = (origemSelect.value || '').toLowerCase();
+    const origemPCP = origem === 'pcp';
+    loteInput.required = origemPCP;
+    referenciaInput.required = !origemPCP;
+
+    if (origem === 'manual') {
+      origemChip.textContent = 'Fluxo manual ativo';
+    } else if (origem === 'integracao') {
+      origemChip.textContent = 'Fluxo de integracao ativo';
+    } else {
+      origemChip.textContent = 'Fluxo PCP ativo';
+    }
+  }
+
+  selectProduto.addEventListener('change', atualizarProdutoInfo);
+  origemSelect.addEventListener('change', atualizarContextoOrigem);
+  if (selectProduto.value) atualizarProdutoInfo();
+  atualizarContextoOrigem();
+</script>
+{% endblock %}

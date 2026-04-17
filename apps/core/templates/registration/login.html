@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Estoque</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --border: #d8d5cc;
+      --border-strong: #a8a49a;
+      --text: #1a1917;
+      --text-muted: #6b6760;
+      --accent: #c8401a;
+      --accent-light: #fdf0ec;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-wrap {
+      width: 100%;
+      max-width: 380px;
+      padding: 1.5rem;
+    }
+
+    .login-brand {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .login-brand::before {
+      content: '';
+      display: block;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.75rem;
+    }
+
+    .form-group { margin-bottom: 1.1rem; }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--text);
+      background: #fff;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 0.65rem;
+      margin-top: 1.5rem;
+      background: var(--text);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: var(--sans);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-login:hover { background: #333; }
+
+    .alert-error {
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      color: var(--accent);
+      padding: 0.7rem 0.9rem;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      margin-bottom: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-brand">Sistema de Estoque</div>
+
+  <div class="login-card">
+    <h1>Entrar</h1>
+
+    {% if form.errors %}
+    <div class="alert-error">
+      Usuário ou senha incorretos. Tente novamente.
+    </div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="form-group">
+        <label for="id_username">Usuário</label>
+        <input type="text" name="username" id="id_username" autofocus autocomplete="username" required>
+      </div>
+
+      <div class="form-group">
+        <label for="id_password">Senha</label>
+        <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="btn-login">Entrar</button>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

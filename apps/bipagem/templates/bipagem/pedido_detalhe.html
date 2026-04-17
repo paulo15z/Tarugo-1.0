@@ -1,0 +1,320 @@
+{% extends "bipagem/base.html" %}
+
+{% block title %}Bipagem Lote {{ preview.lote.lote }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .scanner-shell { display:grid; gap:16px; }
+  .scanner-row { display:grid; grid-template-columns: 1.2fr 0.8fr; gap:16px; align-items:start; }
+  .scan-input {
+    width:100%; padding:20px 22px; border-radius:14px; border:2px solid #33475b;
+    background:#0c1218; color:#fff; font-size:34px; font-family:var(--mono); font-weight:700;
+    letter-spacing:0.04em;
+  }
+  .scan-input:focus { outline:none; border-color:#ff9a4a; box-shadow:0 0 0 4px rgba(255,122,26,0.14); }
+  .destino-overlay, .alert-overlay {
+    display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center;
+    text-align:center; padding:24px;
+  }
+  .destino-overlay { background:#1d4ed8; }
+  .alert-overlay { background:#c2410c; }
+  .destino-box { max-width:1100px; width:100%; }
+  .destino-label { color:#d6e3ef; font-size:22px; text-transform:uppercase; letter-spacing:0.12em; }
+  .destino-main, .alert-main { font-size:min(13vw, 140px); font-weight:900; line-height:0.95; margin:18px 0; }
+  .destino-meta, .alert-meta { font-size:min(3vw, 34px); color:#dce6f1; font-family:var(--mono); }
+  .destino-roteiro { font-size:min(2vw, 26px); color:#eff6ff; margin-top:16px; font-weight:700; }
+  .table-scroll { max-height:60vh; overflow:auto; }
+  .row-finalizado { background: rgba(52,211,153,0.08); }
+  .row-em_producao { background: rgba(251,191,36,0.06); }
+  @media (max-width: 1100px) { .scanner-row { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scanner-shell">
+  <div class="panel">
+    <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div>
+        <div class="muted mono">PID {{ pid }}</div>
+        <h1 style="margin:6px 0 8px;">Lote {{ preview.lote.lote|default:'---' }} ? {{ preview.lote.cliente_nome }}</h1>
+        <div class="muted">Confira o preview, ajuste os filtros se precisar e entao inicie a bipagem.</div>
+      </div>
+      <a class="btn" href="{% url 'bipagem:index' %}">Voltar para lotes</a>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">Pecas</div><div class="value">{{ preview.total_pecas }}</div></div>
+    <div class="card"><div class="label">Ja bipadas</div><div class="value">{{ preview.total_pecas_bipadas }}</div></div>
+    <div class="card"><div class="label">Ripas</div><div class="value">{{ preview.total_ripas }}</div></div>
+    <div class="card"><div class="label">Modulos</div><div class="value">{{ preview.total_modulos }}</div></div>
+    <div class="card"><div class="label">Ambientes</div><div class="value">{{ preview.ambientes|length }}</div></div>
+  </div>
+
+  <div class="scanner-row">
+    <div class="panel">
+      <div class="label" style="margin-bottom:10px;">Bipagem operacional</div>
+      <input id="scanner-input" class="scan-input" type="text" placeholder="Bipe ou digite o codigo da peca" autocomplete="off" autofocus>
+      <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center;">
+        <button id="scan-submit" class="btn btn-primary" type="button">Registrar bipagem</button>
+        <div id="scan-feedback" class="muted" style="padding-top:10px; font-weight:700;"></div>
+      </div>
+      <div style="margin-top:12px;" class="muted">Aceita scanner com debounce e digitacao manual.</div>
+    </div>
+
+    <div class="panel">
+      <div class="label" style="margin-bottom:10px;">Preview do lote</div>
+      <div class="muted">Clientes</div>
+      <div style="margin:4px 0 12px; font-weight:700;">{{ preview.clientes|join:', ' }}</div>
+      <div class="muted">Ambientes</div>
+      <div style="margin:4px 0 12px;">{{ preview.ambientes|join:', ' }}</div>
+      <div class="muted">Planos presentes</div>
+      <div style="margin:4px 0 12px;">{{ preview.planos|join:', ' }}</div>
+      <div class="muted">Arquivo</div>
+      <div style="margin-top:4px;" class="mono">{{ preview.lote.nome_arquivo }}</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <form method="get" style="display:grid; gap:10px; grid-template-columns:2fr 1fr 1fr 1fr auto auto; align-items:end;">
+      <div>
+        <div class="label" style="margin-bottom:6px;">Filtro rapido</div>
+        <input class="field" type="text" name="q" placeholder="Codigo, descricao, local, modulo..." value="{{ filtros.q }}">
+      </div>
+      <div>
+        <div class="label" style="margin-bottom:6px;">Ambiente</div>
+        <select class="select" name="ambiente">
+          <option value="">Todos</option>
+          {% for item in ambientes %}<option value="{{ item }}" {% if filtros.ambiente == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <div class="label" style="margin-bottom:6px;">Plano</div>
+        <select class="select" name="plano">
+          <option value="">Todos</option>
+          {% for item in planos %}<option value="{{ item }}" {% if filtros.plano == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <div class="label" style="margin-bottom:6px;">Status</div>
+        <select class="select" name="status">
+          <option value="">Todos</option>
+          <option value="pendente" {% if filtros.status == 'pendente' %}selected{% endif %}>Pendente</option>
+          <option value="em_producao" {% if filtros.status == 'em_producao' %}selected{% endif %}>Em producao</option>
+          <option value="finalizado" {% if filtros.status == 'finalizado' %}selected{% endif %}>Finalizado</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" type="submit">Filtrar</button>
+      <a class="btn" href="{% url 'bipagem:pedido_detalhe' pid %}">Limpar</a>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
+      <div>
+        <div class="label">Pecas visiveis</div>
+        <div style="font-size:22px; font-weight:800;">{{ pecas|length }}</div>
+      </div>
+      {% if pode_estornar %}
+      <form method="post" action="{% url 'bipagem:estornar_peca' pid %}" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+        {% csrf_token %}
+        <input class="field mono" type="text" name="codigo_peca" placeholder="Codigo para estornar" required>
+        <input class="field" type="text" name="motivo" placeholder="Motivo do estorno" required style="min-width:260px;">
+        <button class="btn btn-danger" type="submit">Estornar peca</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Descricao</th>
+            <th>Ambiente</th>
+            <th>Modulo</th>
+            <th>Plano</th>
+            <th>Destino</th>
+            <th>Qtd</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pecas %}
+          <tr id="row-{{ p.codigo_peca }}" class="row-{{ p.status }}">
+            <td class="mono">{{ p.codigo_peca }}</td>
+            <td>{{ p.descricao }}</td>
+            <td>{{ p.ambiente }}</td>
+            <td>{{ p.modulo }}</td>
+            <td><span class="badge badge-blue">{{ p.plano|default:'--' }}</span></td>
+            <td>{{ p.destino }}</td>
+            <td class="mono">{{ p.quantidade_produzida }}/{{ p.quantidade_planejada }}</td>
+            <td>
+              {% if p.status == 'finalizado' %}
+                <span class="badge badge-green">Finalizado</span>
+              {% elif p.status == 'em_producao' %}
+                <span class="badge badge-yellow">Em producao</span>
+              {% else %}
+                <span class="badge badge-red">Pendente</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="muted">Nenhuma peca encontrada para este filtro.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="destino-overlay" class="destino-overlay">
+  <div class="destino-box">
+    <div class="destino-label">Proximo destino</div>
+    <div id="destino-main" class="destino-main">---</div>
+    <div id="destino-meta" class="destino-meta">---</div>
+    <div id="destino-roteiro" class="destino-roteiro">---</div>
+  </div>
+</div>
+
+<div id="alert-overlay" class="alert-overlay">
+  <div class="destino-box">
+    <div class="destino-label">Atencao</div>
+    <div id="alert-main" class="alert-main">PECA JA BIPADA</div>
+    <div id="alert-meta" class="alert-meta">---</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const pid = '{{ pid }}';
+  const input = document.getElementById('scanner-input');
+  const submitButton = document.getElementById('scan-submit');
+  const feedback = document.getElementById('scan-feedback');
+  const overlay = document.getElementById('destino-overlay');
+  const overlayMain = document.getElementById('destino-main');
+  const overlayMeta = document.getElementById('destino-meta');
+  const overlayRoteiro = document.getElementById('destino-roteiro');
+  const alertOverlay = document.getElementById('alert-overlay');
+  const alertMeta = document.getElementById('alert-meta');
+  const MAPA_CORES = {
+    '01': '#c026d3',
+    '02': '#b45309',
+    '03': '#16a34a',
+    '04': '#2563eb',
+    '05': '#f97316',
+    '06': '#ec4899',
+    '07': '#7c3aed',
+    '08': '#64748b',
+    '09': '#475569',
+    '10': '#06b6d4',
+    '11': '#0f766e',
+    '12': '#94a3b8',
+  };
+  let debounceTimer = null;
+  let processing = false;
+
+  function focusScanner() {
+    setTimeout(() => input.focus(), 60);
+  }
+
+  function showDestino(plano, destino, codigo, descricao, roteiro) {
+    overlayMain.textContent = plano ? `${plano} - ${destino}` : (destino || 'SEM DESTINO');
+    overlayMeta.textContent = `${codigo} - ${descricao}`;
+    overlayRoteiro.textContent = roteiro || '';
+    overlay.style.background = MAPA_CORES[plano] || '#334155';
+    overlay.style.display = 'flex';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      focusScanner();
+    }, 2200);
+  }
+
+  function showAlert(codigo, descricao) {
+    alertMeta.textContent = `${codigo} - ${descricao}`;
+    alertOverlay.style.display = 'flex';
+    setTimeout(() => {
+      alertOverlay.style.display = 'none';
+      focusScanner();
+    }, 1800);
+  }
+
+  function updateRow(peca) {
+    const row = document.getElementById(`row-${peca.codigo_peca}`);
+    if (!row) return;
+    row.className = `row-${peca.status}`;
+    row.cells[5].textContent = peca.destino;
+    row.cells[6].textContent = `${peca.quantidade_produzida}/${peca.quantidade_planejada}`;
+    row.cells[7].innerHTML = peca.status === 'finalizado'
+      ? '<span class="badge badge-green">Finalizado</span>'
+      : peca.status === 'em_producao'
+        ? '<span class="badge badge-yellow">Em producao</span>'
+        : '<span class="badge badge-red">Pendente</span>';
+  }
+
+  async function processScan(code) {
+    if (processing || !code) return;
+    processing = true;
+    feedback.textContent = 'Processando...';
+    try {
+      const response = await fetch('/api/bipagem/bipagem/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({
+          pid: pid,
+          codigo: code,
+          usuario: '{{ user.username|default:"OPERADOR" }}',
+          localizacao: 'BIPAGEM',
+          quantidade: 1,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.sucesso === false) {
+        feedback.textContent = data.mensagem || data.erro || 'Falha na bipagem';
+        feedback.style.color = '#fca5a5';
+        focusScanner();
+        return;
+      }
+      if (data.repetido) {
+        feedback.textContent = 'Peca ja foi bipada';
+        feedback.style.color = '#fdba74';
+        showAlert(data.peca.codigo_peca, data.peca.descricao);
+      } else {
+        feedback.textContent = 'Bipagem registrada';
+        feedback.style.color = '#9bf3d1';
+        updateRow(data.peca);
+        showDestino(data.peca.plano, data.peca.destino, data.peca.codigo_peca, data.peca.descricao, data.peca.roteiro);
+      }
+    } catch (err) {
+      feedback.textContent = 'Erro de comunicacao com o servidor';
+      feedback.style.color = '#fca5a5';
+      focusScanner();
+    } finally {
+      processing = false;
+      input.value = '';
+      focusScanner();
+    }
+  }
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (debounceTimer) clearTimeout(debounceTimer);
+      processScan(input.value.trim());
+    }
+  });
+
+  input.addEventListener('input', () => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    const code = input.value.trim();
+    if (code.length < 4) return;
+    debounceTimer = setTimeout(() => processScan(code), 250);
+  });
+
+  submitButton.addEventListener('click', () => processScan(input.value.trim()));
+  overlay.addEventListener('click', () => { overlay.style.display = 'none'; focusScanner(); });
+  alertOverlay.addEventListener('click', () => { alertOverlay.style.display = 'none'; focusScanner(); });
+  focusScanner();
+</script>
+{% endblock %}

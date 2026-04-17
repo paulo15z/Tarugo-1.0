@@ -1,0 +1,250 @@
+﻿{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Novo Produto - Estoque{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-shell {
+    max-width: 860px;
+  }
+  .form-section {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1rem 0.45rem;
+    margin-bottom: 1rem;
+    background: var(--surface-raised);
+  }
+  .section-title {
+    margin-bottom: 0.85rem;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+  @media (max-width: 760px) {
+    .form-grid { grid-template-columns: 1fr; }
+  }
+  .categoria-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.95rem;
+    background: var(--bg);
+  }
+  .atributos-dinamicos {
+    margin-top: 0.4rem;
+  }
+  .atributos-header {
+    margin-bottom: 0.75rem;
+    font-size: 0.78rem;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Novo produto</h1>
+    <p class="page-subtitle">Cadastre um item com dados gerais e atributos por categoria</p>
+  </div>
+  <a href="{% url 'estoque:lista_produtos' %}" class="btn btn-outline">Voltar</a>
+</div>
+
+<div class="form-card form-shell">
+  <form method="POST" id="produto-form">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="section-title">Identificacao</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="nome">Nome do produto</label>
+          <input type="text" name="nome" id="nome" required placeholder="Ex: Dobradiça Blum Clip Top" value="{{ request.POST.nome }}">
+        </div>
+
+        <div class="form-group">
+          <label for="sku">SKU</label>
+          <input type="text" name="sku" id="sku" required placeholder="Ex: DOB-BLUM-110" style="text-transform: uppercase;" value="{{ request.POST.sku }}">
+          <p class="form-hint">Padrao recomendado: FAMILIA-DETALHE-MEDIDA.</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="categoria_id">Categoria</label>
+        <select name="categoria_id" id="categoria_id" class="categoria-select" required>
+          <option value="">Selecione a categoria...</option>
+          {% for cat in categorias %}
+            {% if not cat.parent %}
+              <optgroup label="{{ cat.nome }}">
+                {% for sub in cat.subcategorias.all %}
+                  <option value="{{ sub.id }}" data-familia="{{ sub.familia }}" {% if request.POST.categoria_id == sub.id|stringformat:"s" %}selected{% endif %}>
+                    {{ sub.nome }}
+                  </option>
+                {% endfor %}
+              </optgroup>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Estoque</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="unidade_medida">Unidade de medida</label>
+          <select name="unidade_medida" id="unidade_medida" required>
+            <option value="un" {% if request.POST.unidade_medida == 'un' %}selected{% endif %}>Unidade (un)</option>
+            <option value="pc" {% if request.POST.unidade_medida == 'pc' %}selected{% endif %}>Peca (pc)</option>
+            <option value="m" {% if request.POST.unidade_medida == 'm' %}selected{% endif %}>Metro linear (m)</option>
+            <option value="m2" {% if request.POST.unidade_medida == 'm2' %}selected{% endif %}>Metro quadrado (m2)</option>
+            <option value="kg" {% if request.POST.unidade_medida == 'kg' %}selected{% endif %}>Quilograma (kg)</option>
+            <option value="l" {% if request.POST.unidade_medida == 'l' %}selected{% endif %}>Litro (l)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="estoque_minimo">Estoque minimo</label>
+          <input type="number" name="estoque_minimo" id="estoque_minimo" min="0" value="{{ request.POST.estoque_minimo|default:5 }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="preco_custo">Preco de custo (R$)</label>
+        <input type="number" name="preco_custo" id="preco_custo" step="0.0001" value="{{ request.POST.preco_custo }}">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Atributos por categoria</div>
+      <div class="atributos-dinamicos" id="atributos-container"></div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Localizacao e referencia</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="lote">Lote / Referencia (opcional)</label>
+          <input type="text" name="lote" id="lote" value="{{ request.POST.lote }}" placeholder="Ex: NF-2026-045 ou lote interno">
+        </div>
+
+        <div class="form-group">
+          <label for="localizacao">Localizacao no almoxarifado</label>
+          <input type="text" name="localizacao" id="localizacao" value="{{ request.POST.localizacao }}" placeholder="Ex: Prateleira B-04 | Gaveta Ferragens">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Cadastrar produto</button>
+      <a href="{% url 'estoque:lista_produtos' %}" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const camposPorCategoria = {
+  "MDF": [
+    {name: "acabamento", label: "Acabamento", type: "text", required: true},
+    {name: "fabricante", label: "Fabricante", type: "text", required: true}
+  ],
+  "Compensado": [
+    {name: "acabamento", label: "Acabamento", type: "text", required: true},
+    {name: "espessura", label: "Espessura (mm)", type: "number", required: true}
+  ],
+  "Dobradicas": [
+    {name: "modelo", label: "Modelo", type: "text", required: true},
+    {name: "angulo", label: "Angulo (graus)", type: "number", required: true},
+    {name: "marca", label: "Marca", type: "text", required: true},
+    {name: "tipo", label: "Tipo", type: "text"}
+  ],
+  "Fitas de Borda": [
+    {name: "acabamento", label: "Acabamento", type: "text", required: true},
+    {name: "largura_mm", label: "Largura (mm)", type: "number", required: true},
+    {name: "marca", label: "Marca", type: "text", required: true}
+  ],
+  "Corredicas": [
+    {name: "modelo", label: "Modelo", type: "text", required: true},
+    {name: "tamanho", label: "Tamanho (mm)", type: "number", required: true},
+    {name: "marca", label: "Marca", type: "text", required: true}
+  ]
+};
+
+function normalizarCategoria(nome) {
+  return (nome || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function renderizarCamposDinamicos() {
+  const container = document.getElementById('atributos-container');
+  container.innerHTML = '';
+
+  const select = document.getElementById('categoria_id');
+  const selecionada = select.options[select.selectedIndex];
+  if (!selecionada || !selecionada.value) return;
+
+  const catNome = normalizarCategoria(selecionada.textContent);
+  const campos = camposPorCategoria[catNome] || [];
+  if (!campos.length) return;
+
+  const header = document.createElement('div');
+  header.className = 'atributos-header';
+  header.textContent = `Campos especificos - ${selecionada.textContent.trim()}`;
+  container.appendChild(header);
+
+  campos.forEach((campo) => {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.textContent = campo.label;
+    group.appendChild(label);
+
+    const input = document.createElement('input');
+    input.type = campo.type;
+    input.name = `atributos_${campo.name}`;
+    input.required = !!campo.required;
+    group.appendChild(input);
+
+    container.appendChild(group);
+  });
+}
+
+document.getElementById('categoria_id').addEventListener('change', renderizarCamposDinamicos);
+
+if (document.getElementById('categoria_id').value) {
+  renderizarCamposDinamicos();
+}
+
+document.getElementById('produto-form').addEventListener('submit', function() {
+  const atributos = {};
+  document.querySelectorAll('input[name^="atributos_"]').forEach((input) => {
+    if (input.value.trim()) {
+      const key = input.name.replace('atributos_', '');
+      atributos[key] = input.value.trim();
+    }
+  });
+
+  const hidden = document.createElement('input');
+  hidden.type = 'hidden';
+  hidden.name = 'atributos_especificos';
+  hidden.value = JSON.stringify(atributos);
+  this.appendChild(hidden);
+});
+</script>
+{% endblock %}

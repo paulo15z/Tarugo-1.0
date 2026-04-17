@@ -1,0 +1,86 @@
+﻿{% extends "base/base.html" %}
+
+{% block title %}Etiquetas Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Etiquetas Dinabox</h1>
+    <p class="page-subtitle">Criacao e limpeza de tipos usados no fluxo de pedidos/producao.</p>
+  </div>
+  <div class="user-meta" style="gap: .5rem;">
+    <a href="{% url 'integracoes:dinabox-clientes-list' %}" class="btn btn-outline">Clientes</a>
+    <a href="{% url 'integracoes:dinabox-materiais-list' %}" class="btn btn-outline">Materiais</a>
+    <a href="{% url 'integracoes:dinabox-projetos-list' %}" class="btn btn-primary">Projetos</a>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 1rem;">
+  <h3 style="margin-bottom: .8rem;">Nova etiqueta</h3>
+  <form method="post" action="{% url 'integracoes:dinabox-etiqueta-criar' %}" style="display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:.7rem;align-items:end;">
+    {% csrf_token %}
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Nome</label>
+      <input name="label_name" required style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Tipo</label>
+      <select name="label_type" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;">
+        <option value="part">part</option>
+        <option value="scrap">scrap</option>
+        <option value="thickened">thickened</option>
+        <option value="input">input</option>
+        <option value="volume">volume</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Conteudo</label>
+      <input name="label_content" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <button class="btn btn-accent" type="submit">Criar</button>
+  </form>
+</div>
+
+<div class="card" style="margin-bottom: 1rem;">
+  <form method="get" style="display:flex;gap:.6rem;align-items:end;">
+    <div style="flex:1;">
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Buscar</label>
+      <input name="s" value="{{ search }}" placeholder="Nome da etiqueta" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+  </form>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Tipo</th>
+        <th>Conteudo</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in response.labels %}
+      <tr>
+        <td class="mono">{{ l.label_id }}</td>
+        <td>{{ l.label_name|default:"-" }}</td>
+        <td>{{ l.label_type|default:"-" }}</td>
+        <td>{{ l.label_content|default:"-" }}</td>
+        <td>
+          <form method="post" action="{% url 'integracoes:dinabox-etiqueta-excluir' %}" onsubmit="return confirm('Excluir etiqueta {{ l.label_id }}?');">
+            {% csrf_token %}
+            <input type="hidden" name="label_id" value="{{ l.label_id }}">
+            <button class="btn btn-outline" type="submit" style="padding:.35rem .6rem;">Excluir</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--text-muted);">Sem etiquetas encontradas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

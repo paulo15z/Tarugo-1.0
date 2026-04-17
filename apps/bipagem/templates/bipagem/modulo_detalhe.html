@@ -1,0 +1,52 @@
+{% extends "bipagem/base.html" %}
+
+{% block title %}Módulo {{ modulo.nome }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Módulo {{ modulo.nome }}</h1>
+    <p class="page-subtitle">Referência: {{ modulo.referencia }}</p>
+  </div>
+  <div class="mono" style="font-size: 0.85rem; color: var(--text-muted);">
+    {{ pecas|length }} peças no total
+  </div>
+</div>
+
+<div class="card" style="padding: 0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID Peça</th>
+          <th>Descrição</th>
+          <th>Local</th>
+          <th>Material</th>
+          <th>Status</th>
+          <th>Data Bipagem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pecas %}
+        <tr>
+          <td class="mono"><strong>{{ p.id_peca }}</strong></td>
+          <td>{{ p.descricao }}</td>
+          <td>{{ p.local }}</td>
+          <td>{{ p.material|default:"—" }}</td>
+          <td>
+            <span class="badge badge-{{ p.status|lower }}">{{ p.status }}</span>
+          </td>
+          <td class="mono" style="font-size: 0.75rem; color: var(--text-muted);">
+            {{ p.data_bipagem|date:"d/m/Y H:i"|default:"—" }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="empty-state">Nenhuma peça encontrada para este módulo.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

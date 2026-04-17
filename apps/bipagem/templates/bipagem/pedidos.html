@@ -1,0 +1,50 @@
+{% extends "bipagem/base.html" %}
+
+{% block title %}Pedidos para Bipagem{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Pedidos em Produção</h1>
+    <p class="page-subtitle">Acompanhamento de conferência por pedido</p>
+  </div>
+</div>
+
+<div class="card" style="padding: 0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Pedido</th>
+          <th>Cliente</th>
+          <th>Progresso</th>
+          <th>Peças</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+        <tr>
+          <td class="mono"><strong>{{ p.numero_pedido }}</strong></td>
+          <td>{{ p.cliente_nome }}</td>
+          <td>
+            <div style="width: 100px; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">
+              <div style="width: {{ p.percentual }}%; height: 100%; background: var(--green);"></div>
+            </div>
+            <span style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--mono);">{{ p.percentual }}%</span>
+          </td>
+          <td class="mono">{{ p.bipadas }}/{{ p.total }}</td>
+          <td>
+            <a href="{% url 'bipagem:pedido_detalhe' p.numero_pedido %}" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">Ver Detalhes</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="empty-state">Nenhum pedido importado para bipagem.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

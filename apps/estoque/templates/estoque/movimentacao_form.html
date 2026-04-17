@@ -1,0 +1,414 @@
+﻿{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Movimentar Estoque{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-shell {
+    max-width: 760px;
+  }
+  .form-section {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1rem 0.4rem;
+    margin-bottom: 1rem;
+    background: var(--surface-raised);
+  }
+  .section-title {
+    margin-bottom: 0.8rem;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  @media (max-width: 720px) {
+    .field-grid { grid-template-columns: 1fr; }
+  }
+  .tipo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin-top: 0.4rem;
+  }
+  .tipo-option input[type="radio"] { display: none; }
+  .tipo-option label {
+    display: block;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    background: var(--bg);
+  }
+  .tipo-option input:checked + label {
+    border-color: var(--text);
+    background: var(--text);
+    color: #fff;
+  }
+  .tipo-option.entrada input:checked + label { border-color: var(--green); background: var(--green); }
+  .tipo-option.saida   input:checked + label { border-color: var(--accent); background: var(--accent); }
+  .tipo-option.ajuste  input:checked + label { border-color: var(--yellow); background: var(--yellow); }
+  .tipo-option label:hover { border-color: var(--border-strong); }
+
+  .produto-info {
+    display: none;
+    margin-top: 0.6rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-family: var(--mono);
+    color: var(--text-muted);
+  }
+  .produto-info.visible { display: flex; gap: 1.5rem; }
+  .saldo-strip {
+    display: none;
+    margin-top: 0.55rem;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .saldo-strip.visible { display: flex; }
+  .saldo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+  .saldo-chip strong {
+    font-size: 0.84rem;
+    color: var(--text);
+  }
+  .saldo-chip.is-zero {
+    background: #fff8f8;
+    border-color: #ffd7d7;
+  }
+  .info-item span:first-child {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.15rem;
+  }
+  .info-item strong {
+    color: var(--text);
+    font-size: 1rem;
+  }
+  .info-item strong.baixo { color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Movimentar estoque</h1>
+    <p class="page-subtitle">Registre entrada, saida ou ajuste de quantidade</p>
+  </div>
+  <a href="{% url 'estoque:lista_produtos' %}" class="btn btn-outline">Voltar</a>
+</div>
+
+<div class="form-card form-shell">
+  <form method="POST" id="mov-form">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="section-title">Material</div>
+      <div class="form-group">
+        <label for="produto_id">Produto</label>
+        <select name="produto_id" id="produto_id" required>
+          <option value="">Selecione um produto...</option>
+          {% for produto in produtos %}
+          <option value="{{ produto.id }}"
+                  data-qtd="{{ produto.quantidade }}"
+                  data-min="{{ produto.estoque_minimo }}"
+                  data-sku="{{ produto.sku }}"
+                  data-familia="{{ produto.categoria.familia }}"
+                  data-espessura-unica="{{ produto.atributos_especificos.espessura|default:'' }}"
+                  {% if produto.categoria.familia == FAMILIA_MDF %}
+                  data-saldos='{ {% for saldo in produto.saldos_mdf.all %}"{{ saldo.espessura }}": {{ saldo.quantidade }}{% if not forloop.last %}, {% endif %}{% endfor %} }'
+                  {% endif %}
+                  {% if request.GET.produto_id == produto.id|stringformat:"s" %}selected{% endif %}>
+            {{ produto.nome }} - {{ produto.sku }} ({{ produto.categoria.nome }})
+          </option>
+          {% endfor %}
+        </select>
+
+        <div class="produto-info" id="produto-info">
+          <div class="info-item">
+            <span>Estoque atual</span>
+            <strong id="info-qtd">-</strong>
+          </div>
+          <div class="info-item">
+            <span>Estoque minimo</span>
+            <strong id="info-min">-</strong>
+          </div>
+          <div class="info-item">
+            <span>SKU</span>
+            <strong id="info-sku">-</strong>
+          </div>
+        </div>
+        <div class="saldo-strip" id="saldo-strip"></div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Operacao</div>
+      <div class="form-group">
+        <label>Tipo de movimentacao</label>
+        <div class="tipo-grid">
+          <div class="tipo-option entrada">
+            <input type="radio" name="tipo" id="tipo-entrada" value="entrada" required>
+            <label for="tipo-entrada">Entrada</label>
+          </div>
+          <div class="tipo-option saida">
+            <input type="radio" name="tipo" id="tipo-saida" value="saida">
+            <label for="tipo-saida">Saida</label>
+          </div>
+          <div class="tipo-option ajuste">
+            <input type="radio" name="tipo" id="tipo-ajuste" value="ajuste">
+            <label for="tipo-ajuste">Ajuste</label>
+          </div>
+        </div>
+        <p class="form-hint" id="tipo-hint">Entrada adiciona ao saldo atual.</p>
+      </div>
+
+      <div class="field-grid">
+        <div class="form-group" id="espessura-group" style="display: none;">
+          <label for="espessura">Espessura (mm)</label>
+          <select name="espessura" id="espessura">
+            <option value="">Selecione a espessura...</option>
+            <option value="6">6 mm</option>
+            <option value="15">15 mm</option>
+            <option value="18">18 mm</option>
+            <option value="25">25 mm</option>
+          </select>
+          <p class="form-hint">Obrigatorio para produtos MDF.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="quantidade" id="qtd-label">Quantidade</label>
+          <input type="number" name="quantidade" id="quantidade" min="0" required placeholder="0">
+          <p class="form-hint" id="qtd-hint"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Contexto</div>
+      <div class="form-group">
+        <label for="observacao">Observacao <span style="font-weight:400; text-transform: none; letter-spacing:0">(opcional)</span></label>
+        <textarea name="observacao" id="observacao" placeholder="Motivo, NF, lote..."></textarea>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Registrar movimentacao</button>
+      <a href="{% url 'estoque:lista_produtos' %}" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const selectProduto = document.getElementById('produto_id');
+  const infoBox = document.getElementById('produto-info');
+  const infoQtd = document.getElementById('info-qtd');
+  const infoMin = document.getElementById('info-min');
+  const infoSku = document.getElementById('info-sku');
+  const tipoHint = document.getElementById('tipo-hint');
+  const qtdHint = document.getElementById('qtd-hint');
+  const qtdLabel = document.getElementById('qtd-label');
+  const qtdInput = document.getElementById('quantidade');
+  const espessuraGroup = document.getElementById('espessura-group');
+  const espessuraSelect = document.getElementById('espessura');
+  const saldoStrip = document.getElementById('saldo-strip');
+
+  function getEspessurasDisponiveis(opt, saldos) {
+    const espUnica = (opt.dataset.espessuraUnica || '').trim();
+    if (espUnica) return [espUnica];
+    return Object.keys(saldos || {}).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+  }
+
+  function preencherSelectEspessura(espessuras) {
+    const atual = espessuraSelect.value;
+    espessuraSelect.innerHTML = '<option value="">Selecione a espessura...</option>';
+    espessuras.forEach((esp) => {
+      const option = document.createElement('option');
+      option.value = esp;
+      option.textContent = `${esp} mm`;
+      espessuraSelect.appendChild(option);
+    });
+    if (espessuras.includes(atual)) {
+      espessuraSelect.value = atual;
+    }
+  }
+
+  const hints = {
+    entrada: 'Entrada adiciona ao saldo atual.',
+    saida: 'Saida desconta do saldo atual. Nao pode ser maior que o saldo disponivel.',
+    ajuste: 'Ajuste define o valor exato do estoque.',
+  };
+
+  function renderSaldosMDF(opt) {
+    saldoStrip.innerHTML = '';
+    saldoStrip.classList.remove('visible');
+    if (!opt || !opt.value) return;
+    const familia = (opt.dataset.familia || '').toLowerCase();
+    if (familia !== 'mdf') return;
+
+    let saldos = {};
+    try {
+      saldos = JSON.parse(opt.dataset.saldos || '{}');
+    } catch (e) {
+      saldos = {};
+    }
+
+    const espessuras = getEspessurasDisponiveis(opt, saldos);
+    preencherSelectEspessura(espessuras);
+
+    espessuras.forEach((esp) => {
+      const qtd = parseInt(saldos[esp] || 0, 10);
+      const chip = document.createElement('span');
+      chip.className = `saldo-chip ${qtd <= 0 ? 'is-zero' : ''}`;
+      chip.innerHTML = `<span>${esp}mm</span><strong>${qtd}</strong>`;
+      saldoStrip.appendChild(chip);
+    });
+    saldoStrip.classList.add('visible');
+  }
+
+  function atualizarProdutoInfo() {
+    const opt = selectProduto.options[selectProduto.selectedIndex];
+    if (!opt.value) {
+      infoBox.classList.remove('visible');
+      espessuraGroup.style.display = 'none';
+      espessuraSelect.required = false;
+      saldoStrip.classList.remove('visible');
+      return;
+    }
+
+    const qtd = parseInt(opt.dataset.qtd || '0', 10);
+    const min = parseInt(opt.dataset.min || '0', 10);
+    const familia = (opt.dataset.familia || '').toLowerCase();
+
+    infoQtd.textContent = qtd;
+    infoQtd.className = qtd <= min ? 'baixo' : '';
+    infoMin.textContent = min;
+    infoSku.textContent = opt.dataset.sku;
+    infoBox.classList.add('visible');
+    renderSaldosMDF(opt);
+
+    if (familia === 'mdf') {
+      let saldos = {};
+      try { saldos = JSON.parse(opt.dataset.saldos || '{}'); } catch (e) { saldos = {}; }
+      preencherSelectEspessura(getEspessurasDisponiveis(opt, saldos));
+      espessuraGroup.style.display = 'block';
+      espessuraSelect.required = true;
+      espessuraSelect.name = 'espessura';
+    } else {
+      espessuraGroup.style.display = 'none';
+      espessuraSelect.required = false;
+      espessuraSelect.name = '';
+    }
+  }
+
+  function atualizarTipo() {
+    const tipo = document.querySelector('input[name="tipo"]:checked');
+    if (!tipo) return;
+
+    tipoHint.textContent = hints[tipo.value] || '';
+
+    if (tipo.value === 'ajuste') {
+      qtdLabel.textContent = 'Novo saldo (quantidade absoluta)';
+      qtdInput.min = 0;
+    } else {
+      qtdLabel.textContent = 'Quantidade';
+      qtdInput.min = 1;
+    }
+
+    if (tipo.value === 'saida') {
+      const opt = selectProduto.options[selectProduto.selectedIndex];
+      if (opt.value) {
+        const familia = (opt.dataset.familia || '').toLowerCase();
+        const esp = espessuraSelect.value;
+
+        if (familia === 'mdf' && esp) {
+          let saldos = {};
+          try { saldos = JSON.parse(opt.dataset.saldos || '{}'); } catch (e) { saldos = {}; }
+          const disponivel = parseInt(saldos[esp] || 0, 10);
+          qtdHint.textContent = `Maximo disponivel para ${esp}mm: ${disponivel}`;
+          qtdInput.max = disponivel;
+        } else if (familia !== 'mdf') {
+          const disponivel = parseInt(opt.dataset.qtd || '0', 10);
+          qtdHint.textContent = `Maximo disponivel: ${disponivel}`;
+          qtdInput.max = disponivel;
+        }
+      }
+    } else {
+      qtdInput.removeAttribute('max');
+      qtdHint.textContent = '';
+    }
+  }
+
+  function atualizarSaldoPorEspessura() {
+    const opt = selectProduto.options[selectProduto.selectedIndex];
+    const esp = espessuraSelect.value;
+    const tipo = document.querySelector('input[name="tipo"]:checked');
+
+    if (!opt.value || (opt.dataset.familia || '').toLowerCase() !== 'mdf') return;
+
+    let saldos = {};
+    try { saldos = JSON.parse(opt.dataset.saldos || '{}'); } catch (e) { saldos = {}; }
+
+    if (!esp) {
+      qtdHint.textContent = 'Selecione a espessura para ver o saldo disponivel.';
+      qtdInput.removeAttribute('max');
+      return;
+    }
+
+    const qtdEsp = parseInt(saldos[esp] || 0, 10);
+    if (tipo && tipo.value === 'saida') {
+      qtdHint.textContent = `Maximo disponivel para ${esp}mm: ${qtdEsp}`;
+      qtdInput.max = qtdEsp;
+    } else {
+      qtdHint.textContent = `Saldo atual para ${esp}mm: ${qtdEsp}`;
+      qtdInput.removeAttribute('max');
+    }
+  }
+
+  selectProduto.addEventListener('change', () => {
+    atualizarProdutoInfo();
+    atualizarTipo();
+    atualizarSaldoPorEspessura();
+  });
+
+  espessuraSelect.addEventListener('change', () => {
+    atualizarSaldoPorEspessura();
+    atualizarTipo();
+  });
+
+  document.querySelectorAll('input[name="tipo"]').forEach((r) =>
+    r.addEventListener('change', atualizarTipo)
+  );
+
+  if (selectProduto.value) atualizarProdutoInfo();
+</script>
+{% endblock %}

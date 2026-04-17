@@ -1,0 +1,101 @@
+﻿{% extends "base/base.html" %}
+
+{% block title %}Cliente Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'integracoes:dinabox-clientes-list' %}" style="text-decoration:none;color:var(--text-muted);">&larr; Voltar para clientes</a>
+    <h1 class="page-title" style="margin-top:.4rem;">Cliente {{ customer.customer_id|default:customer_id }}</h1>
+    <p class="page-subtitle">Atualizacao simples de cadastro no Dinabox</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:1rem;">
+  <form method="post" action="{% url 'integracoes:dinabox-cliente-atualizar' customer_id %}" style="display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:.7rem;align-items:end;">
+    {% csrf_token %}
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Nome *</label>
+      <input name="customer_name" value="{{ customer.customer_name|default:'' }}" required style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Tipo</label>
+      <select name="customer_type" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;">
+        <option value="pf" {% if customer.customer_type == 'pf' %}selected{% endif %}>PF</option>
+        <option value="pj" {% if customer.customer_type == 'pj' %}selected{% endif %}>PJ</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Status</label>
+      <select name="customer_status" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;">
+        <option value="on" {% if customer.customer_status == 'on' %}selected{% endif %}>Ativo</option>
+        <option value="off" {% if customer.customer_status == 'off' %}selected{% endif %}>Inativo</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Emails</label>
+      <input name="customer_emails" value="{{ customer.customer_emails|default:'' }}" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Telefones</label>
+      <input name="customer_phones" value="{{ customer.customer_phones|default:'' }}" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Observacao</label>
+      <input name="customer_note" value="{{ customer.customer_note|default:'' }}" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">CPF</label>
+      <input name="customer_cpf" value="{{ form_initial.customer_cpf }}" placeholder="000.000.000-00" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">CNPJ</label>
+      <input name="customer_cnpj" value="{{ form_initial.customer_cnpj }}" placeholder="00.000.000/0000-00" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">CEP</label>
+      <input name="address_zipcode" value="{{ form_initial.address_zipcode }}" placeholder="00000-000" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Origem</label>
+      <input name="custom_origem" value="{{ form_initial.custom_origem }}" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div style="grid-column:1 / span 2;">
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Endereco</label>
+      <input name="address_street" value="{{ form_initial.address_street }}" placeholder="Rua / Avenida" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Numero</label>
+      <input name="address_number" value="{{ form_initial.address_number }}" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Complemento</label>
+      <input name="address_complement" value="{{ form_initial.address_complement }}" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Bairro</label>
+      <input name="address_district" value="{{ form_initial.address_district }}" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">Cidade</label>
+      <input name="address_city" value="{{ form_initial.address_city }}" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.3rem;">UF</label>
+      <input name="address_state" value="{{ form_initial.address_state }}" maxlength="2" placeholder="SP" style="width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;" />
+    </div>
+
+    <div style="grid-column:1 / span 4;display:flex;justify-content:flex-end;">
+      <button class="btn btn-accent" type="submit">Salvar Alteracoes</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="border-left:4px solid #d28f85;">
+  <h3 style="margin-bottom:.6rem;color:#b84832;">Zona de risco</h3>
+  <form method="post" action="{% url 'integracoes:dinabox-cliente-excluir' customer_id %}" onsubmit="return confirm('Excluir cliente {{ customer_id }} no Dinabox?');">
+    {% csrf_token %}
+    <button class="btn btn-outline" type="submit" style="border-color:#d28f85;color:#b84832;">Excluir Cliente</button>
+  </form>
+</div>
+{% endblock %}

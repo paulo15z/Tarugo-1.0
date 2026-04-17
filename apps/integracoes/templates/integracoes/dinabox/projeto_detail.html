@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+
+{% block title %}Projeto Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{% url 'integracoes:dinabox-projetos-list' %}" style="text-decoration: none; color: var(--text-muted);">&larr; Voltar para projetos</a>
+        <h1 class="page-title" style="margin-top: 0.5rem;">{{ projeto.project_description|default:"Projeto" }}</h1>
+        <p class="page-subtitle">ID: <span class="mono">{{ projeto.project_id }}</span> | Status: {{ projeto.project_status|default:"-" }}</p>
+    </div>
+    <div>
+        <a href="{% url 'integracoes:dinabox-lotes-list' %}" class="btn btn-outline">Ver Lotes</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+    <div class="card">
+        <h3 style="margin-bottom: 1rem;">Informacoes Gerais</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Cliente</div>
+                <div>{{ projeto.project_customer_name|default:"-" }}</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Autor</div>
+                <div>{{ projeto.project_author_name|default:"-" }}</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Criado em</div>
+                <div>{{ projeto.project_created|default:"-" }}</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Ultima atualizacao</div>
+                <div>{{ projeto.project_last_modified|default:"-" }}</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Notas</div>
+            <div style="background: var(--surface-raised); border-radius: 6px; padding: 0.8rem; margin-top: 0.3rem;">
+                {{ projeto.project_note|default:"Sem observacoes." }}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 1rem;">Resumo</h3>
+        <div style="display: grid; gap: 0.7rem;">
+            <div style="display: flex; justify-content: space-between;"><span>Versao</span><strong>v{{ projeto.project_version|default:"-" }}</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>Parceiros</span><span class="badge badge-neutral">{{ projeto.partners|length }}</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>Marcenaria</span><span class="badge badge-neutral">{{ projeto.woodwork|length }}</span></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

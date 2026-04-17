@@ -1,0 +1,367 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Estoque - Tarugo{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        padding: 1.25rem;
+        border-left: 4px solid var(--border);
+    }
+
+    .stat-card.alert { border-left-color: var(--error); background: #fff5f5; }
+    .stat-card.success { border-left-color: var(--success); background: #ebfbee; }
+
+    .stat-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1;
+    }
+
+    .product-name { font-weight: 700; color: var(--text); font-size: 1rem; margin-bottom: 0.25rem; }
+    .sku-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        max-width: 170px;
+        padding: 0.2rem 0.45rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface-raised);
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .thickness-strip {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .thickness-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.32rem 0.55rem;
+        background: var(--surface-raised);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-family: var(--mono);
+        line-height: 1;
+        white-space: nowrap;
+    }
+    .thickness-chip .esp {
+        font-size: 0.68rem;
+        font-weight: 800;
+        color: var(--text-dim);
+    }
+    .thickness-chip .disp-main {
+        font-size: 0.98rem;
+        font-weight: 900;
+        color: var(--text);
+    }
+    .thickness-chip .qtd-meta {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    .thickness-chip.is-zero {
+        border-color: #ffd7d7;
+        background: #fff8f8;
+    }
+
+    .saldo-geral {
+        display: flex;
+        flex-direction: column;
+        gap: 0.18rem;
+    }
+    .saldo-geral .disp-main {
+        font-family: var(--mono);
+        font-size: 1.05rem;
+        font-weight: 800;
+    }
+    .saldo-geral .qtd-meta {
+        font-family: var(--mono);
+        font-size: 0.76rem;
+        color: var(--text-muted);
+    }
+
+    .actions-cell { text-align: right; }
+    .actions-group {
+        display: inline-flex;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    .actions-group .btn {
+        min-width: 122px;
+        justify-content: center;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: var(--surface);
+        padding: 2rem;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 450px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 0.6rem;
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        font-family: inherit;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Estoque Industrial</h1>
+        <p class="page-subtitle">Gestao de chapas, ferragens e insumos</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'estoque:produto_create' %}" class="btn btn-outline">
+            <i class="fas fa-plus"></i> Novo Acabamento
+        </a>
+        <a href="{% url 'estoque:movimentacao_create' %}" class="btn btn-primary">
+            <i class="fas fa-exchange-alt"></i> Registrar Entrada/Saida
+        </a>
+    </div>
+</div>
+
+<div class="stats-row">
+    <div class="card stat-card success">
+        <div class="stat-label">Itens em Estoque</div>
+        <div class="stat-value">{{ display_rows|length }}</div>
+    </div>
+    <div class="card stat-card {% if produtos_criticos_count %}alert{% else %}success{% endif %}">
+        <div class="stat-label">Abaixo do Minimo</div>
+        <div class="stat-value">{{ produtos_criticos_count }}</div>
+    </div>
+</div>
+
+<div class="card" style="padding: 1rem; margin-bottom: 1rem;">
+    <form method="GET" class="field-grid" style="grid-template-columns: 2fr 1fr 1fr auto auto;">
+        <div class="form-group" style="margin: 0;">
+            <label for="q">Busca</label>
+            <input type="text" id="q" name="q" value="{{ query_q }}" placeholder="Nome, SKU ou categoria...">
+        </div>
+        <div class="form-group" style="margin: 0;">
+            <label for="familia">Familia</label>
+            <select id="familia" name="familia">
+                <option value="">Todas</option>
+                {% for fam in familias_disponiveis %}
+                    <option value="{{ fam }}" {% if query_familia == fam %}selected{% endif %}>{{ fam }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin: 0;">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="" {% if not query_status %}selected{% endif %}>Todos</option>
+                <option value="ok" {% if query_status == "ok" %}selected{% endif %}>OK</option>
+                <option value="critico" {% if query_status == "critico" %}selected{% endif %}>Critico</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: end;">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filtrar</button>
+        </div>
+        <div style="display: flex; align-items: end;">
+            <a href="{% url 'estoque:lista_produtos' %}" class="btn btn-outline">Limpar</a>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Material / SKU</th>
+                <th>Familia</th>
+                <th>Saldo operacional</th>
+                <th>Minimo</th>
+                <th>Status</th>
+                <th class="actions-cell">Acoes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in display_rows %}
+            {% if row.kind == "single" %}
+            {% with p=row.produto disp=row.disponibilidade critico=row.critico %}
+            <tr>
+                <td>
+                    <div class="product-name">{{ p.nome }}</div>
+                    <span class="sku-pill" title="{{ p.sku }}">{{ p.sku }}</span>
+                </td>
+                <td>
+                    <span class="badge badge-neutral">{{ p.categoria.familia|default:"GERAL" }}</span>
+                </td>
+                <td>
+                    {% if p.categoria.familia == FAMILIA_MDF %}
+                        <div class="thickness-strip">
+                            {% for item in disp.por_espessura %}
+                                <div class="thickness-chip {% if item.saldo_disponivel <= 0 %}is-zero{% endif %}" title="Disponivel: {{ item.saldo_disponivel|floatformat:0 }} | Fisico: {{ item.saldo_fisico|floatformat:0 }} | Reservado: {{ item.saldo_reservado|floatformat:0 }}">
+                                    <span class="esp">{{ item.espessura }}mm</span>
+                                    <span class="disp-main">{{ item.saldo_disponivel|floatformat:0 }}</span>
+                                    <span class="qtd-meta">{{ item.saldo_fisico|floatformat:0 }}/{{ item.saldo_reservado|floatformat:0 }}</span>
+                                </div>
+                            {% empty %}
+                                <span class="text-dim" style="font-size: 0.8rem;">Sem saldos inicializados</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="saldo-geral">
+                            <span class="disp-main">{{ disp.saldo_disponivel|floatformat:0 }} {{ p.unidade_medida }}</span>
+                            <span class="qtd-meta">{{ disp.saldo_fisico|floatformat:0 }}/{{ disp.saldo_reservado|floatformat:0 }}</span>
+                        </div>
+                    {% endif %}
+                </td>
+                <td class="mono" style="font-weight: 600;">{{ p.estoque_minimo|floatformat:0 }}</td>
+                <td>
+                    {% if critico %}
+                        <span class="badge badge-error">Critico</span>
+                    {% else %}
+                        <span class="badge badge-success">OK</span>
+                    {% endif %}
+                </td>
+                <td class="actions-cell">
+                    <div class="actions-group">
+                        <a class="btn btn-outline" href="{% url 'estoque:movimentacao_create' %}?produto_id={{ p.id }}">
+                            <i class="fas fa-truck-loading"></i> Movimentar
+                        </a>
+                        <button class="btn btn-outline" type="button" onclick="openConfigModal('{{ p.id }}', '{{ p.nome }}', '{{ p.estoque_minimo }}')">
+                            <i class="fas fa-cog"></i> Configurar
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endwith %}
+            {% else %}
+            <tr>
+                <td>
+                    <div class="product-name">{{ row.nome_exibicao }}</div>
+                    <span class="sku-pill" title="{{ row.sku_exibicao }}">{{ row.sku_exibicao }}</span>
+                </td>
+                <td>
+                    <span class="badge badge-neutral">{{ row.familia|default:"GERAL" }}</span>
+                </td>
+                <td>
+                    <div class="thickness-strip">
+                        {% for item in row.chips %}
+                            <div class="thickness-chip {% if item.saldo_disponivel <= 0 %}is-zero{% endif %}" title="{{ item.produto_nome }} | Disponivel: {{ item.saldo_disponivel|floatformat:0 }} | Fisico: {{ item.saldo_fisico|floatformat:0 }} | Reservado: {{ item.saldo_reservado|floatformat:0 }}">
+                                <span class="esp">{{ item.espessura }}mm</span>
+                                <span class="disp-main">{{ item.saldo_disponivel|floatformat:0 }}</span>
+                                <span class="qtd-meta">{{ item.saldo_fisico|floatformat:0 }}/{{ item.saldo_reservado|floatformat:0 }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td class="mono" style="font-weight: 600;">{{ row.minimo|floatformat:0 }}</td>
+                <td>
+                    {% if row.critico %}
+                        <span class="badge badge-error">Critico</span>
+                    {% else %}
+                        <span class="badge badge-success">OK</span>
+                    {% endif %}
+                </td>
+                <td class="actions-cell">
+                    <div class="actions-group">
+                        <a class="btn btn-outline" href="{% url 'estoque:movimentacao_create' %}">
+                            <i class="fas fa-truck-loading"></i> Movimentar
+                        </a>
+                        <a class="btn btn-outline" href="{% url 'estoque:lista_produtos' %}" title="Configure por item/espessura na movimentacao">
+                            <i class="fas fa-cog"></i> Configurar
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="configModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-bottom: 1.5rem; letter-spacing: -0.02em;">Configurar Material</h2>
+        <form id="configForm" method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Estoque Minimo Geral</label>
+                <input type="number" name="estoque_minimo" id="modalMinimo" required>
+            </div>
+            <div class="form-group">
+                <label>Espessura (para Preco de Custo)</label>
+                <select name="espessura">
+                    <option value="6">6 mm</option>
+                    <option value="15">15 mm</option>
+                    <option value="18">18 mm</option>
+                    <option value="25">25 mm</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Preco de Custo da Chapa (R$)</label>
+                <input type="number" name="preco_custo" step="0.01" placeholder="0.00">
+            </div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Salvar Alteracoes</button>
+                <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openConfigModal(id, nome, minimo) {
+        const modal = document.getElementById('configModal');
+        const form = document.getElementById('configForm');
+        const inputMin = document.getElementById('modalMinimo');
+
+        form.action = `/estoque/produtos/${id}/config/`;
+        inputMin.value = Math.round(minimo);
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('configModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('configModal');
+        if (event.target == modal) closeModal();
+    }
+</script>
+{% endblock %}

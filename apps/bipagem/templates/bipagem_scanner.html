@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bipagem - Tarugo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* Lotes List View */
+        .lotes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .lote-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #3498db;
+        }
+
+        .lote-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .lote-card.completed {
+            border-left-color: #27ae60;
+        }
+
+        .lote-card.in-progress {
+            border-left-color: #f39c12;
+        }
+
+        .lote-card.pending {
+            border-left-color: #e74c3c;
+        }
+
+        .lote-card h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .lote-card p {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        /* Lote Detail View */
+        .lote-header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .lote-header h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .lote-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 4px;
+        }
+
+        .info-item label {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .info-item value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* Scanner Form */
+        .scanner-form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group input[type="text"] {
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-back {
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        /* Peças List */
+        .pecas-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .pecas-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .pecas-table thead {
+            background: #34495e;
+            color: white;
+        }
+
+        .pecas-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .pecas-table td {
+            padding: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .pecas-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pendente {
+            background: #ffe5e5;
+            color: #c0392b;
+        }
+
+        .status-badge.bipada {
+            background: #e8f5e9;
+            color: #27ae60;
+        }
+
+        .status-badge.concluida {
+            background: #e3f2fd;
+            color: #2980b9;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 3px solid #ecf0f1;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .lotes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .lote-info {
+                grid-template-columns: 1fr;
+            }
+
+            .pecas-table {
+                font-size: 14px;
+            }
+
+            .pecas-table th,
+            .pecas-table td {
+                padding: 10px;
+            }
+
+            header h1 {
+                font-size: 20px;
+            }
+
+            .container {
+                padding: 10px;
+            }
+        }
+
+        /* Result Card */
+        .result-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #27ae60;
+        }
+
+        .result-card.error {
+            border-left-color: #e74c3c;
+        }
+
+        .result-card h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item label {
+            font-weight: 600;
+            color: #7f8c8d;
+        }
+
+        .result-item value {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .destino-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: #3498db;
+            color: white;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 Bipagem - Separação de Peças</h1>
+            <p>Sistema de conferência e separação de lotes para produção</p>
+        </header>
+
+        <!-- Alert Messages -->
+        <div id="alert" class="alert"></div>
+
+        <!-- Lotes List View -->
+        <div id="lotesView" class="view active">
+            <h2 style="margin-bottom: 20px; color: #2c3e50;">Lotes Disponíveis</h2>
+            <div id="lotesContainer" class="lotes-grid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Carregando lotes...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lote Detail View -->
+        <div id="loteDetailView" class="view">
+            <button class="btn btn-secondary btn-back" onclick="goToLotes()">← Voltar aos Lotes</button>
+            
+            <div class="lote-header">
+                <h2 id="loteName"></h2>
+                <div class="lote-info">
+                    <div class="info-item">
+                        <label>Ambiente</label>
+                        <value id="loteAmbiente">-</value>
+                    </div>
+                    <div class="info-item">
+                        <label>Referência</label>
+                        <value id="loteReferencia">-</value>
+                    </div>
+                    <div class="info-item">
+                        <label>Total de Peças</label>
+                        <value id="loteTotalPecas">-</value>
+                    </div>
+                    <div class="info-item">
+                        <label>Peças Bipadas</label>
+                        <value id="lotePecasBipadas">-</value>
+                    </div>
+                    <div class="info-item">
+                        <label>Progresso</label>
+                        <value id="loteProgresso">0%</value>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scanner Form -->
+            <div class="scanner-form">
+                <h3 style="margin-bottom: 15px; color: #2c3e50;">Registrar Bipagem</h3>
+                <form id="scannerForm" onsubmit="registrarBipagem(event)">
+                    <div class="form-group">
+                        <label for="codigoPeca">Código da Peça (Scanner)</label>
+                        <input 
+                            type="text" 
+                            id="codigoPeca" 
+                            placeholder="Escaneie o código da peça..." 
+                            autofocus
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="usuario">Usuário</label>
+                        <input 
+                            type="text" 
+                            id="usuario" 
+                            placeholder="Seu nome" 
+                            value="Operador"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="localizacao">Localização</label>
+                        <input 
+                            type="text" 
+                            id="localizacao" 
+                            placeholder="Ex: Máquina 3 - Corte" 
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Registrar Bipagem</button>
+                </form>
+            </div>
+
+            <!-- Result Card -->
+            <div id="resultCard" style="display: none;"></div>
+
+            <!-- Peças List -->
+            <h3 style="margin-top: 30px; margin-bottom: 15px; color: #2c3e50;">Peças do Lote</h3>
+            <div id="pecasContainer" class="pecas-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Carregando peças...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/bipagem';
+        let currentLoteId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarLotes();
+        });
+
+        // Load Lotes
+        async function carregarLotes() {
+            try {
+                const response = await fetch(`${API_BASE}/lotes/`);
+                const data = await response.json();
+                
+                const container = document.getElementById('lotesContainer');
+                
+                if (!data.lotes || data.lotes.length === 0) {
+                    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #7f8c8d; padding: 40px;">Nenhum lote disponível</p>';
+                    return;
+                }
+
+                container.innerHTML = data.lotes.map(lote => `
+                    <div class="lote-card ${lote.status}" onclick="abrirLote(${lote.id})">
+                        <h3>${lote.nome_ambiente}</h3>
+                        <p><strong>Referência:</strong> ${lote.referencia_principal || 'N/A'}</p>
+                        <p><strong>Peças:</strong> ${lote.pecas_bipadas} / ${lote.total_pecas}</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${lote.percentual_concluido}%"></div>
+                        </div>
+                        <div class="progress-text">${lote.percentual_concluido}% concluído</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                mostrarAlerta('Erro ao carregar lotes: ' + error.message, 'error');
+            }
+        }
+
+        // Open Lote Detail
+        async function abrirLote(loteId) {
+            currentLoteId = loteId;
+            document.getElementById('lotesView').classList.remove('active');
+            document.getElementById('loteDetailView').classList.add('active');
+            
+            try {
+                const response = await fetch(`${API_BASE}/lotes/${loteId}/`);
+                const data = await response.json();
+                
+                const lote = data.lote;
+                document.getElementById('loteName').textContent = lote.nome_ambiente;
+                document.getElementById('loteAmbiente').textContent = lote.nome_ambiente;
+                document.getElementById('loteReferencia').textContent = lote.referencia_principal || 'N/A';
+                document.getElementById('loteTotalPecas').textContent = lote.total_pecas;
+                document.getElementById('lotePecasBipadas').textContent = lote.pecas_bipadas;
+                document.getElementById('loteProgresso').textContent = lote.percentual_concluido + '%';
+
+                // Load peças
+                carregarPecasDoLote(loteId);
+            } catch (error) {
+                mostrarAlerta('Erro ao carregar lote: ' + error.message, 'error');
+            }
+        }
+
+        // Load Peças
+        async function carregarPecasDoLote(loteId) {
+            try {
+                const response = await fetch(`${API_BASE}/lotes/${loteId}/pecas/`);
+                const data = await response.json();
+                
+                const container = document.getElementById('pecasContainer');
+                
+                if (!data.pecas || data.pecas.length === 0) {
+                    container.innerHTML = '<p style="padding: 20px; text-align: center; color: #7f8c8d;">Nenhuma peça neste lote</p>';
+                    return;
+                }
+
+                const tableHTML = `
+                    <table class="pecas-table">
+                        <thead>
+                            <tr>
+                                <th>ID Peça</th>
+                                <th>Descrição</th>
+                                <th>Local</th>
+                                <th>Destino</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.pecas.map(peca => `
+                                <tr>
+                                    <td><strong>${peca.id_peca}</strong></td>
+                                    <td>${peca.descricao}</td>
+                                    <td>${peca.local}</td>
+                                    <td>${peca.destino || '-'}</td>
+                                    <td>
+                                        <span class="status-badge ${peca.status.toLowerCase()}">
+                                            ${peca.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                container.innerHTML = tableHTML;
+            } catch (error) {
+                mostrarAlerta('Erro ao carregar peças: ' + error.message, 'error');
+            }
+        }
+
+        // Register Bipagem
+        async function registrarBipagem(event) {
+            event.preventDefault();
+            
+            const codigo = document.getElementById('codigoPeca').value.trim();
+            const usuario = document.getElementById('usuario').value.trim();
+            const localizacao = document.getElementById('localizacao').value.trim();
+
+            if (!codigo || !usuario || !localizacao) {
+                mostrarAlerta('Preencha todos os campos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/bipagem/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        codigo: codigo,
+                        usuario: usuario,
+                        localizacao: localizacao
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    mostrarResultado(data.peca, true);
+                    document.getElementById('codigoPeca').value = '';
+                    document.getElementById('codigoPeca').focus();
+                    
+                    // Refresh peças list
+                    setTimeout(() => carregarPecasDoLote(currentLoteId), 1000);
+                } else {
+                    mostrarResultado(data, false);
+                    document.getElementById('codigoPeca').focus();
+                }
+            } catch (error) {
+                mostrarAlerta('Erro ao registrar bipagem: ' + error.message, 'error');
+            }
+        }
+
+        // Show Result
+        function mostrarResultado(peca, sucesso) {
+            const resultCard = document.getElementById('resultCard');
+            const destino = peca.destino || 'Não definido';
+            
+            resultCard.innerHTML = `
+                <div class="result-card ${sucesso ? '' : 'error'}">
+                    <h3>${sucesso ? '✓ Bipagem Registrada' : '✗ Erro na Bipagem'}</h3>
+                    <div class="result-item">
+                        <label>Código da Peça:</label>
+                        <value>${peca.id_peca}</value>
+                    </div>
+                    <div class="result-item">
+                        <label>Descrição:</label>
+                        <value>${peca.descricao}</value>
+                    </div>
+                    <div class="result-item">
+                        <label>Destino:</label>
+                        <value><span class="destino-badge">${destino}</span></value>
+                    </div>
+                    <div class="result-item">
+                        <label>Status:</label>
+                        <value><span class="status-badge ${peca.status.toLowerCase()}">${peca.status}</span></value>
+                    </div>
+                </div>
+            `;
+            
+            resultCard.style.display = 'block';
+            resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Show Alert
+        function mostrarAlerta(mensagem, tipo) {
+            const alert = document.getElementById('alert');
+            alert.textContent = mensagem;
+            alert.className = `alert show alert-${tipo}`;
+            
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 5000);
+        }
+
+        // Go Back
+        function goToLotes() {
+            document.getElementById('loteDetailView').classList.remove('active');
+            document.getElementById('lotesView').classList.add('active');
+            carregarLotes();
+        }
+    </script>
+</body>
+</html>

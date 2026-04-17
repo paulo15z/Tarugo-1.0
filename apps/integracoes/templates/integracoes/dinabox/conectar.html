@@ -1,0 +1,66 @@
+﻿{% extends "base/base.html" %}
+
+{% block title %}Conta Tecnica Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Integracao Dinabox</h1>
+        <p class="page-subtitle">Conta tecnica unica para o Tarugo (sem login por operador).</p>
+    </div>
+    <div class="user-meta" style="gap: 0.5rem;">
+        <a href="{% url 'integracoes:dinabox-clientes-list' %}" class="btn btn-outline">Clientes</a>
+        <a href="{% url 'integracoes:dinabox-materiais-list' %}" class="btn btn-outline">Materiais</a>
+        <a href="{% url 'integracoes:dinabox-etiquetas-list' %}" class="btn btn-outline">Etiquetas</a>
+        <a href="{% url 'integracoes:dinabox-projetos-list' %}" class="btn btn-primary">Projetos</a>
+        <a href="{% url 'integracoes:dinabox-lotes-list' %}" class="btn btn-outline">Lotes</a>
+        <a href="{% url 'integracoes:dinabox-capacidades' %}" class="btn btn-outline">Capacidades API</a>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 1rem; border-left: 4px solid {% if dinabox_conectado %}var(--success){% else %}var(--error){% endif %};">
+    <p style="margin-bottom: 0.5rem;"><strong>Status da conexao:</strong> {% if dinabox_conectado %}Ativa{% else %}Falha{% endif %}</p>
+
+    {% if dinabox_conectado %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.8rem; margin-bottom: 1rem;">
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Login tecnico</div>
+            <div style="font-weight: 700;">{{ dinabox_auth.user_login|default:dinabox_profile.user_login|default:"-" }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Usuario exibicao</div>
+            <div style="font-weight: 700;">{{ dinabox_auth.user_display_name|default:dinabox_profile.user_display_name|default:"-" }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">E-mail</div>
+            <div style="font-weight: 700;">{{ dinabox_auth.user_email|default:dinabox_profile.user_email|default:"-" }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Token</div>
+            <div style="font-weight: 700;">{{ dinabox_auth.token_preview|default:"***" }}</div>
+        </div>
+    </div>
+    {% else %}
+    <p style="color: var(--error); font-weight: 600; margin-bottom: 1rem;">{{ dinabox_error|default:"Nao foi possivel autenticar com a conta tecnica." }}</p>
+    {% endif %}
+
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <form method="post" action="{% url 'integracoes:dinabox-conectar' %}">
+            {% csrf_token %}
+            <button class="btn btn-accent" type="submit">Revalidar Conta Tecnica</button>
+        </form>
+        <form method="post" action="{% url 'integracoes:dinabox-desconectar' %}">
+            {% csrf_token %}
+            <button class="btn btn-outline" type="submit">Limpar Cache de Token</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom: 0.6rem;">Politica de acesso</h3>
+    <p style="color: var(--text-muted); line-height: 1.5;">
+        O Dinabox usa uma conta tecnica unica no backend. Operadores nao digitam login/senha da API.
+        Controle de quem pode usar a integracao continua sendo feito por grupos internos do Tarugo.
+    </p>
+</div>
+{% endblock %}

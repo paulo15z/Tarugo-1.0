@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrada - Tarugo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --surface-soft: #f0f2f5;
+      --border: #d9dee5;
+      --text: #171b22;
+      --text-muted: #5c6778;
+      --accent: #c8401a;
+      --accent-hover: #a83515;
+      --ok: #2f7f41;
+      --sans: 'Inter', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 8% 10%, #ffffff 0%, rgba(255,255,255,0) 30%),
+        linear-gradient(145deg, #f8f9fb 0%, #eef1f5 100%);
+      color: var(--text);
+      font-family: var(--sans);
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    .entry-shell {
+      width: 100%;
+      max-width: 980px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(20, 25, 35, 0.08);
+    }
+
+    .entry-header {
+      background: linear-gradient(110deg, #1e2430 0%, #2b3443 100%);
+      color: #f2f5f9;
+      padding: 1.4rem 1.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-size: 1.3rem;
+    }
+
+    .brand-dot {
+      width: 11px;
+      height: 11px;
+      background: var(--accent);
+      border-radius: 3px;
+      transform: rotate(45deg);
+    }
+
+    .sub {
+      font-size: 0.85rem;
+      color: #c7d0dd;
+      font-family: var(--mono);
+    }
+
+    .entry-main {
+      padding: 1.5rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .login-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1rem;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 1.2rem;
+    }
+
+    h1 {
+      font-size: 1.45rem;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    p.muted {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-family: var(--mono);
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      padding: 0.65rem 0.75rem;
+      margin-bottom: 0.8rem;
+      font-size: 0.95rem;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #8b94a5;
+      box-shadow: 0 0 0 3px rgba(139, 148, 165, 0.12);
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0.62rem 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.15s ease;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--text);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: #0c0f14; }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+      margin-top: 0.85rem;
+    }
+
+    .btn-accent:hover { background: var(--accent-hover); }
+
+    .alert-error {
+      border: 1px solid #f1c8bf;
+      background: #fff3f0;
+      color: #9a2a0f;
+      padding: 0.7rem;
+      border-radius: 8px;
+      margin-bottom: 0.8rem;
+      font-size: 0.9rem;
+    }
+
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.9rem;
+      margin-top: 0.3rem;
+    }
+
+    .app-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      background: linear-gradient(180deg, #fff 0%, #f6f8fb 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .app-setor {
+      color: var(--ok);
+      font-size: 0.76rem;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .app-nome {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .app-desc {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      min-height: 2.2rem;
+    }
+
+    .empty {
+      border: 1px dashed var(--border);
+      background: var(--surface-soft);
+      border-radius: 10px;
+      padding: 1rem;
+      color: var(--text-muted);
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.25rem;
+    }
+
+    .logout {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text-muted);
+      padding: 0.45rem 0.7rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .logout:hover { color: #b52f0f; border-color: #e2b1a6; }
+
+    @media (max-width: 860px) {
+      .login-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <section class="entry-shell">
+    <header class="entry-header">
+      <div>
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <span>Tarugo</span>
+        </div>
+        <div class="sub">Entrada do sistema · IP:8000</div>
+      </div>
+      {% if user.is_authenticated %}
+      <div style="text-align: right;">
+        <div style="font-weight: 700;">{{ user.username }}</div>
+        <div class="sub">Selecione um setor para continuar</div>
+      </div>
+      {% endif %}
+    </header>
+
+    <main class="entry-main">
+      {% if modo == "login" %}
+      <div class="login-grid">
+        <div class="card">
+          <h1>Entrar no Tarugo</h1>
+          <p class="muted">Faça login para acessar o app do seu setor.</p>
+
+          {% if form.errors %}
+          <div class="alert-error">Usuário ou senha inválidos. Tente novamente.</div>
+          {% endif %}
+
+          <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.POST.next|default:request.GET.next|default:'' }}">
+
+            <label for="id_username">Usuário</label>
+            <input id="id_username" type="text" name="username" autofocus autocomplete="username" required>
+
+            <label for="id_password">Senha</label>
+            <input id="id_password" type="password" name="password" autocomplete="current-password" required>
+
+            <button type="submit" class="btn btn-primary">Entrar</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h1 style="font-size: 1.2rem;">Direcionamento por setor</h1>
+          <p class="muted">Após o login, o sistema mostra os apps liberados para seu perfil:</p>
+          <div class="empty">
+            Estoque · PCP · Bipagem · Dinabox<br>
+            O acesso depende do seu grupo/permissão.
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="top-actions">
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="logout" type="submit">Sair</button>
+        </form>
+      </div>
+      <div class="card">
+        <h1>Escolha seu app</h1>
+        <p class="muted">Apps disponíveis para o seu usuário no momento.</p>
+
+        {% if apps_disponiveis %}
+        <div class="apps-grid">
+          {% for app in apps_disponiveis %}
+          <article class="app-card">
+            <span class="app-setor">{{ app.setor }}</span>
+            <div class="app-nome">{{ app.nome }}</div>
+            <p class="app-desc">{{ app.descricao }}</p>
+            <a href="{{ app.url }}" class="btn btn-accent">Acessar</a>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty">
+          Seu usuário autenticou, mas não possui app liberado por grupo.<br>
+          Solicite ajuste de permissão no Admin.
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </main>
+  </section>
+</body>
+</html>

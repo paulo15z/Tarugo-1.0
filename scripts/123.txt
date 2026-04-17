@@ -1,0 +1,4 @@
+popular o banco de dados 
+
+python manage.py seed_categorias
+python scripts/insert_mdf_finishes.py

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Bipagem{% endblock %} | Tarugo</title>
+  <style>
+    :root {
+      --bg: #11161c;
+      --panel: #18212b;
+      --panel-2: #1f2a36;
+      --border: #2a3948;
+      --text: #e8eef5;
+      --muted: #98a8b8;
+      --accent: #ff7a1a;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --blue: #60a5fa;
+      --mono: "Consolas", "Courier New", monospace;
+      --sans: "Segoe UI", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: linear-gradient(180deg, #0d1319 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 14, 19, 0.95);
+      backdrop-filter: blur(8px);
+    }
+    .brand { font-family: var(--mono); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .brand small { color: var(--muted); font-weight: 400; }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .header-actions a, .header-actions button {
+      color: var(--text);
+      text-decoration: none;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    main { max-width: 1500px; margin: 0 auto; padding: 24px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+    }
+    .grid { display: grid; gap: 16px; }
+    .cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .card .value { font-size: 28px; font-weight: 800; margin-top: 8px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; border: 1px solid var(--border); background: var(--panel-2);
+      color: var(--text); padding: 10px 14px; border-radius: 10px; cursor: pointer; text-decoration: none;
+    }
+    .btn-primary { background: var(--accent); color: #111; border-color: #ff9a4a; font-weight: 700; }
+    .btn-danger { background: #3a1b1b; border-color: #6a2a2a; color: #ffd5d5; }
+    .field, .select {
+      width: 100%; background: #0f151c; color: var(--text); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+    }
+    .muted { color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    tr:hover { background: rgba(255,255,255,0.03); }
+    .mono { font-family: var(--mono); }
+    .badge { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
+    .badge-green { background: rgba(52, 211, 153, 0.16); color: #9bf3d1; }
+    .badge-yellow { background: rgba(251, 191, 36, 0.16); color: #fddd8f; }
+    .badge-red { background: rgba(248, 113, 113, 0.16); color: #ffc1c1; }
+    .badge-blue { background: rgba(96, 165, 250, 0.16); color: #bfdbfe; }
+    .messages { margin-bottom: 16px; display: grid; gap: 10px; }
+    .message { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<header>
+  <div class="brand">Bipagem <small>operacao assistida</small></div>
+  <div class="header-actions">
+    <a href="{% url 'bipagem:index' %}">Lotes Liberados</a>
+    <a href="{% url 'pcp:index' %}">PCP</a>
+    {% if user.is_authenticated %}
+      <span class="muted">{{ user.username }}</span>
+    {% endif %}
+  </div>
+</header>
+<main>
+  {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="message">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
