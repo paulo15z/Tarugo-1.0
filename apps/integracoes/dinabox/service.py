@@ -73,15 +73,34 @@ class DinaboxService:
         
         rows = []
         for module in project.woodwork:
+            # Identificar fitas nos inputs do módulo (comum em peças dupladas)
+            module_inputs_tapes = [i for i in module.inputs if i.category_id == "fita" or "ABS" in (i.description or "")]
+            module_tape_name = module_inputs_tapes[0].name if module_inputs_tapes else None
+
             for part in module.parts:
                 # Lógica de detecção de duplagem/engrosso simplificada para notas
                 is_thickened = (
                     "_dup_" in (part.note or "").lower() or 
-                    "duplagem" in (part.note or "").lower()
+                    "duplagem" in (part.note or "").lower() or
+                    module.type == "thickened"
                 )
 
                 # Detecção de furação/usinagem baseada nos códigos de bipagem
                 has_machining = any([part.code_a, part.code_b, part.code_a2, part.code_b2])
+
+                # Se for duplada/engrossada, as fitas podem vir do módulo pai
+                # Priorizamos as fitas do módulo se a peça estiver marcada para duplagem
+                edge_top = part.edge_top.name
+                edge_bottom = part.edge_bottom.name
+                edge_left = part.edge_left.name
+                edge_right = part.edge_right.name
+
+                if is_thickened:
+                    # Se a peça não tem fita mas o módulo tem na mesma posição, herdamos
+                    edge_top = edge_top or module.edge_top.name or (module_tape_name if module.edge_top.perimeter else None)
+                    edge_bottom = edge_bottom or module.edge_bottom.name or (module_tape_name if module.edge_bottom.perimeter else None)
+                    edge_left = edge_left or module.edge_left.name or (module_tape_name if module.edge_left.perimeter else None)
+                    edge_right = edge_right or module.edge_right.name or (module_tape_name if module.edge_right.perimeter else None)
 
                 # Mapeamento para o formato legado do CSV esperado pelo PCP 1.0
                 row = {
@@ -98,10 +117,10 @@ class DinaboxService:
                     "CODIGO DO MATERIAL": part.material.id if part.material else "",
                     "MATERIAL DA PEÇA": part.material.name if part.material else "",
                     "VEIO": "Sim" if part.material and part.material.vein else "Não",
-                    "BORDA_FACE_FRENTE": part.edge_top.name or "",
-                    "BORDA_FACE_TRASEIRA": part.edge_bottom.name or "",
-                    "BORDA_FACE_LE": part.edge_left.name or "",
-                    "BORDA_FACE_LD": part.edge_right.name or "",
+                    "BORDA_FACE_FRENTE": edge_top or "",
+                    "BORDA_FACE_TRASEIRA": edge_bottom or "",
+                    "BORDA_FACE_LE": edge_left or "",
+                    "BORDA_FACE_LD": edge_right or "",
                     "LOTE": "", 
                     "OBSERVAÇÃO": part.note or "",
                     "DESCRIÇÃO DA PEÇA": part.name,
