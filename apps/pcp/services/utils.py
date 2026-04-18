@@ -290,13 +290,18 @@ def calcular_roteiro(row) -> str:
     # MPE: Montagem de Portas e Externos (Frentes e acabamentos simples)
     # Agora utilizando estritamente dinabox_porta vindo do campo ENTITY (mapeado na API)
     entity = str(_row_get(row, 'ENTITY')).strip().lower()
-    eh_mpe = 'dinabox_porta' in entity or eh_porta or eh_frontal or tem_puxador or 'frente' in desc
+    eh_contrafrente = 'contrafrente' in desc or 'contra-frente' in desc or 'contra frente' in desc
+    eh_fundo = 'fundo' in desc or 'fundo' in local
+    
+    # MPE não deve incluir contrafrentes
+    eh_mpe = ('dinabox_porta' in entity or eh_porta or eh_frontal or tem_puxador or 'frente' in desc) and not eh_contrafrente
     
     # MAR: Marcenaria Geral (Itens decorativos, painéis, tamponamentos)
     eh_mar = eh_painel or eh_tamponamento or tem_tamponamento_tag or 'regua' in desc or 'régua' in desc
     
     # Lógica de Roteamento de Marcenaria
-    if eh_caixaria and not eh_mpe and not eh_mar:
+    # Fundos e caixaria estrutural vão para MCX
+    if (eh_caixaria or eh_fundo) and not eh_mpe and not eh_mar:
         rota.append('MCX')
     elif eh_mpe:
         rota.append('MPE')
