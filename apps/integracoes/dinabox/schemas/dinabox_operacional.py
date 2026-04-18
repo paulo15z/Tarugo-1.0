@@ -174,6 +174,10 @@ class ModuleOperacional(DinaboxBaseModel):
     edge_thickness: Optional[float] = None
     thumbnail: Optional[str] = None
     pre_assembly: Optional[bool] = False
+    edge_left: EdgeDetail = Field(default_factory=EdgeDetail)
+    edge_right: EdgeDetail = Field(default_factory=EdgeDetail)
+    edge_top: EdgeDetail = Field(default_factory=EdgeDetail)
+    edge_bottom: EdgeDetail = Field(default_factory=EdgeDetail)
     parts: List[PartOperacional] = Field(default_factory=list)
     inputs: List[InputItemOperacional] = Field(default_factory=list)
 
@@ -199,7 +203,7 @@ class ModuleOperacional(DinaboxBaseModel):
                         "name": edge_value if isinstance(edge_value, str) else None,
                         "material_id": data.get(f"{edge_key}_id"),
                         "perimeter": data.get(f"{edge_key}_perimeter"),
-                        "abs": data.get(f"{edge_key}_abs"),
+                        "abs": data.get(f"{edge_key}_abs") or data.get(f"{edge_key}_abs"),
                         "factory_price": data.get(f"{edge_key}_factory"),
                     }
             normalized.append(data)
@@ -238,4 +242,19 @@ class DinaboxProjectOperacional(DinaboxBaseModel):
         data = dict(obj)
         if "project_author_id" not in data and "project_author" in data:
             data["project_author_id"] = data.get("project_author")
+        
+        # Normalizar bordas dos módulos
+        if "woodwork" in data:
+            for module in data["woodwork"]:
+                for side in ["left", "right", "top", "bottom"]:
+                    edge_key = f"edge_{side}"
+                    edge_value = module.get(edge_key)
+                    if edge_value is None or isinstance(edge_value, str):
+                        module[edge_key] = {
+                            "name": edge_value if isinstance(edge_value, str) else None,
+                            "material_id": module.get(f"{edge_key}_id"),
+                            "perimeter": module.get(f"{edge_key}_perimeter"),
+                            "abs": module.get(f"{edge_key}_abs"),
+                            "factory_price": module.get(f"{edge_key}_factory"),
+                        }
         return data
