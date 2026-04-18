@@ -236,7 +236,6 @@ def calcular_roteiro(row) -> str:
     ).strip().lower()
 
     tem_borda = any(str(_row_get(row, c)).strip() not in ('', 'nan') for c in BORDA_COLS)
-    # Furo agora só é Sim se realmente tiver usinagem ou furação na peça
     tem_furo = furo in ('sim', 'true', '1')
     tem_duplagem = duplagem in ('sim', 'true', '1')
     
@@ -255,17 +254,24 @@ def calcular_roteiro(row) -> str:
     tem_eletrica = '_led_' in obs
     tem_curvo = '_curvo_' in obs
 
+    # Sequência Industrial: COR -> DUP -> USI -> FUR -> BOR
+    # O BOR deve ser por último para conferência e acabamento final
     rota = ['COR']
+    
     if tem_duplagem and not eh_ripa:
         rota.append('DUP')
+        
+    if tem_furo:
+        rota.append('USI')
+        rota.append('FUR')
+        
     if tem_borda:
         rota.append('BOR')
         if eh_ripa:
             rota.append('MAR')
             rota.append('XBOR')
-    if tem_furo:
-        rota.append('USI')
-        rota.append('FUR')
+
+    # Setores de Montagem e Acabamento
     if (eh_gaveta or eh_caixa) and not eh_painel and not tem_duplagem and not tem_tamponamento_tag:
         rota.append('MCX')
     elif tem_puxador or eh_porta or eh_frontal:

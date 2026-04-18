@@ -34,6 +34,8 @@ EXPECTED_DINABOX_COLUMNS = [
     "REFERENCIA",
     "FURACAO_A",
     "FURACAO_B",
+    "FURACAO_A2",
+    "FURACAO_B2",
 ]
 
 COLUMN_ALIASES = {
@@ -71,17 +73,15 @@ class DinaboxService:
         
         rows = []
         for module in project.woodwork:
-            # Identificar se o módulo em si é um engrossado/duplado
-            is_module_thickened = module.type == "thickened" or module.edge_thickness and module.edge_thickness > (module.thickness + 5)
-            
             for part in module.parts:
-                # Lógica de detecção de duplagem/engrosso refinada
+                # Lógica de detecção de duplagem/engrosso simplificada para notas
                 is_thickened = (
                     "_dup_" in (part.note or "").lower() or 
-                    "duplagem" in (part.note or "").lower() or
-                    is_module_thickened or
-                    (part.edge_thickness and part.edge_thickness > (part.thickness + 5))
+                    "duplagem" in (part.note or "").lower()
                 )
+
+                # Detecção de furação/usinagem baseada nos códigos de bipagem
+                has_machining = any([part.code_a, part.code_b, part.code_a2, part.code_b2])
 
                 # Mapeamento para o formato legado do CSV esperado pelo PCP 1.0
                 row = {
@@ -106,13 +106,15 @@ class DinaboxService:
                     "OBSERVAÇÃO": part.note or "",
                     "DESCRIÇÃO DA PEÇA": part.name,
                     "ID DA PEÇA": part.id,
-                    "LOCAL": module.name, # Substituindo entity por nome do módulo para ser mais útil
+                    "LOCAL": module.name, 
                     "DUPLAGEM": "Sim" if is_thickened else "", 
-                    "FURO": "Sim" if (part.total_holes > 0 or (part.machining and len(part.machining) > 0)) else "Não",
+                    "FURO": "Sim" if has_machining else "Não",
                     "OBS": part.note or "",
                     "REFERENCIA": f"{module.ref} - {part.ref}",
                     "FURACAO_A": part.code_a or "",
                     "FURACAO_B": part.code_b or "",
+                    "FURACAO_A2": part.code_a2 or "",
+                    "FURACAO_B2": part.code_b2 or "",
                 }
                 rows.append(row)
         
