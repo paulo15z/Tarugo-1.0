@@ -53,7 +53,13 @@ def _formatar_ripa_para_erro(row, altura_ripa: float, altura_chapa: float) -> st
 
 
 def consolidar_ripas(df: pd.DataFrame) -> pd.DataFrame:
-    """Consolida ripas em tiras considerando refilo, serra e IDs unicos."""
+    """
+    Consolida ripas em tiras considerando refilo, serra e IDs unicos.
+    Criterios de identificacao:
+    1. Nome da peca contem 'RIPA'
+    2. Observacao contem a tag '_ripa_'
+    3. EXCECAO: Se for 'PORTA' ou 'dinabox_porta', nao eh consolidada como ripa de corte.
+    """
     desc_col = _pick_column(df, 'DESCRIÇÃO DA PEÇA', 'DESCRIÃ‡ÃƒO DA PEÃ‡A', 'DESCRI??O DA PE?A')
     if not desc_col:
         raise ValueError("Coluna de descricao da peca nao encontrada para consolidacao de ripas.")
@@ -66,7 +72,11 @@ def consolidar_ripas(df: pd.DataFrame) -> pd.DataFrame:
     if not altura_col or not largura_col or not material_col:
         raise ValueError("Colunas obrigatorias para consolidacao de ripas nao encontradas.")
 
+    entity_col = _pick_column(df, 'ENTITY')
     mask_porta = _series(df, 'LOCAL').astype(str).str.upper().str.contains('PORTA', na=False)
+    if entity_col:
+        mask_porta = mask_porta | _series(df, entity_col).astype(str).str.lower().str.contains('dinabox_porta', na=False)
+
     mask_ripa = (
         _series(df, desc_col).astype(str).str.upper().str.contains('RIPA', na=False)
         | (_series(df, obs_col).astype(str).str.lower().str.contains('_ripa_', na=False) if obs_col else False)
@@ -278,7 +288,9 @@ def calcular_roteiro(row) -> str:
     eh_caixaria = any(p in local for p in palavras_caixaria) or any(p in desc for p in palavras_caixaria)
     
     # MPE: Montagem de Portas e Externos (Frentes e acabamentos simples)
-    eh_mpe = eh_porta or eh_frontal or tem_puxador or 'frente' in desc
+    # Agora utilizando estritamente dinabox_porta vindo do campo ENTITY (mapeado na API)
+    entity = str(_row_get(row, 'ENTITY')).strip().lower()
+    eh_mpe = 'dinabox_porta' in entity or eh_porta or eh_frontal or tem_puxador or 'frente' in desc
     
     # MAR: Marcenaria Geral (Itens decorativos, painéis, tamponamentos)
     eh_mar = eh_painel or eh_tamponamento or tem_tamponamento_tag or 'regua' in desc or 'régua' in desc
@@ -289,7 +301,7 @@ def calcular_roteiro(row) -> str:
     elif eh_mpe:
         rota.append('MPE')
         rota.append('MAR') # MPE geralmente passa pela marcenaria para ajustes
-    elif eh_mar or eh_ripa:
+    elif eh_mar or (eh_ripa and not eh_caixaria):
         rota.append('MAR')
         
     # XMAR: Marcenaria Extra (Peças curvas ou complexas)

@@ -36,6 +36,7 @@ EXPECTED_DINABOX_COLUMNS = [
     "FURACAO_B",
     "FURACAO_A2",
     "FURACAO_B2",
+    "ENTITY",
 ]
 
 COLUMN_ALIASES = {
@@ -109,11 +110,18 @@ class DinaboxService:
                     except ValueError:
                         pass
 
-                    # Herança de fitas do módulo (fallback se a peça estiver limpa)
-                    edge_top = edge_top or module.edge_top.name or (module_tape_name if module.edge_top.perimeter else None)
-                    edge_bottom = edge_bottom or module.edge_bottom.name or (module_tape_name if module.edge_bottom.perimeter else None)
-                    edge_left = edge_left or module.edge_left.name or (module_tape_name if module.edge_left.perimeter else None)
-                    edge_right = edge_right or module.edge_right.name or (module_tape_name if module.edge_right.perimeter else None)
+                    # Herança de fitas do módulo: APENAS se a face tiver perímetro de fitagem no módulo
+                    edge_top = edge_top or (module.edge_top.name if (module.edge_top.perimeter and module.edge_top.perimeter > 0) else None)
+                    edge_bottom = edge_bottom or (module.edge_bottom.name if (module.edge_bottom.perimeter and module.edge_bottom.perimeter > 0) else None)
+                    edge_left = edge_left or (module.edge_left.name if (module.edge_left.perimeter and module.edge_left.perimeter > 0) else None)
+                    edge_right = edge_right or (module.edge_right.name if (module.edge_right.perimeter and module.edge_right.perimeter > 0) else None)
+
+                    # Se ainda estiver sem nome de fita mas o módulo indicar fitagem, usamos a fita dos inputs
+                    if module_tape_name:
+                        edge_top = edge_top or (module_tape_name if (module.edge_top.perimeter and module.edge_top.perimeter > 0) else None)
+                        edge_bottom = edge_bottom or (module_tape_name if (module.edge_bottom.perimeter and module.edge_bottom.perimeter > 0) else None)
+                        edge_left = edge_left or (module_tape_name if (module.edge_left.perimeter and module.edge_left.perimeter > 0) else None)
+                        edge_right = edge_right or (module_tape_name if (module.edge_right.perimeter and module.edge_right.perimeter > 0) else None)
 
                 # Mapeamento para o formato legado do CSV esperado pelo PCP 1.0
                 row = {
@@ -147,6 +155,7 @@ class DinaboxService:
                     "FURACAO_B": part.code_b or "",
                     "FURACAO_A2": part.code_a2 or "",
                     "FURACAO_B2": part.code_b2 or "",
+                    "ENTITY": part.entity or "",
                 }
                 rows.append(row)
         
