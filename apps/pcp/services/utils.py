@@ -44,7 +44,7 @@ def _formatar_ripa_para_erro(row, altura_ripa: float, altura_chapa: float) -> st
     """Monta uma mensagem clara para identificar a ripa que falhou."""
     id_peca = str(_row_get(row, 'ID DA PEÇA', 'ID DA PEÃ‡A', 'ID DA PEÃƒâ€¡A', 'ID')).strip() or 'sem ID'
     descricao = str(_row_get(row, 'DESCRIÇÃO DA PEÇA', 'DESCRIÃ‡ÃƒO DA PEÃ‡A', 'DESCRI??O DA PE?A')).strip() or 'sem descricao'
-    local = str(_row_get(row, 'LOCAL')).strip() or 'sem local'
+    local = str(_row_get(row, 'CONTEXTO', 'LOCAL')).strip() or 'sem contexto'
     return (
         f"Ripa invalida para consolidacao: ID {id_peca} | {descricao} | {local} | "
         f"altura {altura_ripa:.1f}mm > tira {altura_chapa:.1f}mm (com refilo). "
@@ -73,7 +73,7 @@ def consolidar_ripas(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("Colunas obrigatorias para consolidacao de ripas nao encontradas.")
 
     entity_col = _pick_column(df, 'ENTITY')
-    mask_porta = _series(df, 'LOCAL').astype(str).str.upper().str.contains('PORTA', na=False)
+    mask_porta = _series(df, 'CONTEXTO', 'LOCAL').astype(str).str.upper().str.contains('PORTA', na=False)
     if entity_col:
         mask_porta = mask_porta | _series(df, entity_col).astype(str).str.lower().str.contains('dinabox_porta', na=False)
 
@@ -109,7 +109,7 @@ def consolidar_ripas(df: pd.DataFrame) -> pd.DataFrame:
         'ESPESSURA',
         'ALTURA_NUM',
         'LARGURA_NUM',
-        'LOCAL',
+        _pick_column(df, 'CONTEXTO', 'LOCAL'),
         *fita_cols,
     ])
 
@@ -184,7 +184,7 @@ def determinar_plano_de_corte(row, roteiro: str) -> str:
         + ' '
         + str(_row_get(row, 'OBS'))
     ).strip().lower()
-    local = str(_row_get(row, 'LOCAL')).strip().lower()
+    local = str(_row_get(row, 'CONTEXTO', 'LOCAL')).strip().lower()
     material = str(_row_get(row, 'MATERIAL DA PEÇA', 'MATERIAL DA PEÃ‡A', 'MATERIAL DA PE?A')).strip().lower()
     duplagem = str(_row_get(row, 'DUPLAGEM')).strip().lower()
 
@@ -236,7 +236,7 @@ def determinar_plano_de_corte(row, roteiro: str) -> str:
 def calcular_roteiro(row) -> str:
     """Calcula roteiro com base nos campos operacionais do Dinabox."""
     desc = str(_row_get(row, 'DESCRIÇÃO DA PEÇA', 'DESCRIÃ‡ÃƒO DA PEÃ‡A', 'DESCRI??O DA PE?A')).strip().lower()
-    local = str(_row_get(row, 'LOCAL')).strip().lower()
+    local = str(_row_get(row, 'CONTEXTO', 'LOCAL')).strip().lower()
     duplagem = str(_row_get(row, 'DUPLAGEM')).strip().lower()
     furo = str(_row_get(row, 'FURO')).strip().lower()
     obs = (

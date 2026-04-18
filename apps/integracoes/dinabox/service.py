@@ -27,7 +27,7 @@ EXPECTED_DINABOX_COLUMNS = [
     "OBSERVAÇÃO",
     "DESCRIÇÃO DA PEÇA",
     "ID DA PEÇA",
-    "LOCAL",
+    "CONTEXTO",
     "DUPLAGEM",
     "FURO",
     "OBS",
@@ -123,6 +123,12 @@ class DinaboxService:
                         edge_left = edge_left or (module_tape_name if (module.edge_left.perimeter and module.edge_left.perimeter > 0) else None)
                         edge_right = edge_right or (module_tape_name if (module.edge_right.perimeter and module.edge_right.perimeter > 0) else None)
 
+                # Lógica de CONTEXTO: Aponta o módulo de origem para facilitar identificação coletiva
+                # Útil para portas ripadas, frentes e painéis que pertencem a um conjunto
+                contexto = f"MOD: {module.name}"
+                if module.ref:
+                    contexto += f" ({module.ref})"
+
                 # Mapeamento para o formato legado do CSV esperado pelo PCP 1.0
                 row = {
                     "NOME DO CLIENTE": project.project_customer_name,
@@ -146,7 +152,7 @@ class DinaboxService:
                     "OBSERVAÇÃO": part.note or "",
                     "DESCRIÇÃO DA PEÇA": part_desc,
                     "ID DA PEÇA": part.id,
-                    "LOCAL": module.name, 
+                    "CONTEXTO": contexto, 
                     "DUPLAGEM": "Sim" if is_thickened else "", 
                     "FURO": "Sim" if has_machining else "Não",
                     "OBS": part.note or "",
