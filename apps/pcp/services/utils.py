@@ -254,7 +254,7 @@ def calcular_roteiro(row) -> str:
     tem_eletrica = '_led_' in obs
     tem_curvo = '_curvo_' in obs
 
-    # Sequência Industrial: COR -> DUP -> USI -> FUR -> BOR
+    # Sequência Industrial: COR -> DUP -> USI/FUR -> BOR
     # O BOR deve ser por último para conferência e acabamento final
     rota = ['COR']
     
@@ -262,31 +262,46 @@ def calcular_roteiro(row) -> str:
         rota.append('DUP')
         
     if tem_furo:
-        rota.append('USI')
+        # Unificando USI e FUR no mesmo setor conforme solicitado
         rota.append('FUR')
         
     if tem_borda:
         rota.append('BOR')
         if eh_ripa:
-            rota.append('MAR')
-            rota.append('XBOR')
+            rota.append('XBOR') # Ripa que tem borda vai para setor extra de borda
 
-    # Setores de Montagem e Acabamento
-    if (eh_gaveta or eh_caixa) and not eh_painel and not tem_duplagem and not tem_tamponamento_tag:
+    # --- Setores de Marcenaria (Montagem e Acabamento) ---
+    
+    # MCX: Montagem de Caixa (Caixaria estrutural)
+    # Identificamos por palavras-chave no local (módulo) ou descrição da peça
+    palavras_caixaria = ['balcao', 'balcão', 'aereo', 'aéreo', 'torre', 'gaveteiro', 'caixa', 'interno', 'base', 'lateral', 'prateleira', 'divisor', 'fundo']
+    eh_caixaria = any(p in local for p in palavras_caixaria) or any(p in desc for p in palavras_caixaria)
+    
+    # MPE: Montagem de Portas e Externos (Frentes e acabamentos simples)
+    eh_mpe = eh_porta or eh_frontal or tem_puxador or 'frente' in desc
+    
+    # MAR: Marcenaria Geral (Itens decorativos, painéis, tamponamentos)
+    eh_mar = eh_painel or eh_tamponamento or tem_tamponamento_tag or 'regua' in desc or 'régua' in desc
+    
+    # Lógica de Roteamento de Marcenaria
+    if eh_caixaria and not eh_mpe and not eh_mar:
         rota.append('MCX')
-    elif tem_puxador or eh_porta or eh_frontal:
+    elif eh_mpe:
         rota.append('MPE')
+        rota.append('MAR') # MPE geralmente passa pela marcenaria para ajustes
+    elif eh_mar or eh_ripa:
         rota.append('MAR')
-    if eh_painel or eh_tamponamento or tem_tamponamento_tag:
-        rota.append('MAR')
+        
+    # XMAR: Marcenaria Extra (Peças curvas ou complexas)
+    if tem_curvo or 'curvo' in desc or 'curva' in desc:
+        rota.append('XMAR')
+
     if tem_pintura:
         rota.append('PIN')
     if tem_tapecar:
         rota.append('TAP')
     if tem_eletrica:
         rota.append('MEL')
-    if tem_curvo:
-        rota.append('XMAR')
 
     rota.extend(['CQL', 'EXP'])
 
