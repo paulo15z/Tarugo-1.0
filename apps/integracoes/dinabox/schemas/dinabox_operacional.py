@@ -115,12 +115,14 @@ class PartOperacional(DinaboxBaseModel):
     height: float
     thickness: float
     weight: float = 0.0
+    edge_thickness: Optional[float] = None
     material: Optional[MaterialInfo] = None
     edge_left: EdgeDetail = Field(default_factory=EdgeDetail)
     edge_right: EdgeDetail = Field(default_factory=EdgeDetail)
     edge_top: EdgeDetail = Field(default_factory=EdgeDetail)
     edge_bottom: EdgeDetail = Field(default_factory=EdgeDetail)
     holes: Optional[PartHoles] = None
+    machining: Optional[List[Any]] = Field(default_factory=list)
     
     @property
     def total_holes(self) -> int:
@@ -169,6 +171,7 @@ class ModuleOperacional(DinaboxBaseModel):
     width: float
     height: float
     thickness: float
+    edge_thickness: Optional[float] = None
     thumbnail: Optional[str] = None
     pre_assembly: Optional[bool] = False
     parts: List[PartOperacional] = Field(default_factory=list)

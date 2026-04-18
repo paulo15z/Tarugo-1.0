@@ -176,6 +176,7 @@ def determinar_plano_de_corte(row, roteiro: str) -> str:
     ).strip().lower()
     local = str(_row_get(row, 'LOCAL')).strip().lower()
     material = str(_row_get(row, 'MATERIAL DA PEÇA', 'MATERIAL DA PEÃ‡A', 'MATERIAL DA PE?A')).strip().lower()
+    duplagem = str(_row_get(row, 'DUPLAGEM')).strip().lower()
 
     tag_ripa = '_ripa_' in obs
     eh_porta_frontal = (
@@ -193,6 +194,7 @@ def determinar_plano_de_corte(row, roteiro: str) -> str:
     tag_lamina = '_lamina_' in obs
     tag_pintura = '_pin_' in obs or 'PIN' in roteiro
     tag_pre_montagem = '_pre_' in obs or '_pr?_' in obs or 'PR?' in roteiro
+    tem_duplagem = duplagem in ('sim', 'true', '1')
 
     # Regra operacional: plano 03 para ripas reais.
     # Nao classificar "porta ripada"/frontal como ripa de corte.
@@ -204,7 +206,7 @@ def determinar_plano_de_corte(row, roteiro: str) -> str:
         return '02'
     if tag_painel or tag_passagem:
         return '07'
-    if 'DUP' in roteiro:
+    if tem_duplagem or 'DUP' in roteiro:
         return '05'
     if tag_pre_montagem or 'pre montagem' in obs or 'prem' in obs:
         return '10'
@@ -234,8 +236,10 @@ def calcular_roteiro(row) -> str:
     ).strip().lower()
 
     tem_borda = any(str(_row_get(row, c)).strip() not in ('', 'nan') for c in BORDA_COLS)
-    tem_furo = furo not in ('', 'nan', 'none')
-    tem_duplagem = duplagem not in ('', 'nan', 'none')
+    # Furo agora só é Sim se realmente tiver usinagem ou furação na peça
+    tem_furo = furo in ('sim', 'true', '1')
+    tem_duplagem = duplagem in ('sim', 'true', '1')
+    
     tem_puxador = 'puxador' in desc or 'tampa' in desc
     eh_ripa = 'ripa' in desc or 'ripa' in local or '_ripa_' in obs
     eh_porta = 'porta' in local or 'porta' in desc

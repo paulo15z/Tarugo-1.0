@@ -32,6 +32,8 @@ EXPECTED_DINABOX_COLUMNS = [
     "FURO",
     "OBS",
     "REFERENCIA",
+    "FURACAO_A",
+    "FURACAO_B",
 ]
 
 COLUMN_ALIASES = {
@@ -69,9 +71,19 @@ class DinaboxService:
         
         rows = []
         for module in project.woodwork:
+            # Identificar se o módulo em si é um engrossado/duplado
+            is_module_thickened = module.type == "thickened" or module.edge_thickness and module.edge_thickness > (module.thickness + 5)
+            
             for part in module.parts:
+                # Lógica de detecção de duplagem/engrosso refinada
+                is_thickened = (
+                    "_dup_" in (part.note or "").lower() or 
+                    "duplagem" in (part.note or "").lower() or
+                    is_module_thickened or
+                    (part.edge_thickness and part.edge_thickness > (part.thickness + 5))
+                )
+
                 # Mapeamento para o formato legado do CSV esperado pelo PCP 1.0
-                # A ordem aqui segue exatamente EXPECTED_DINABOX_COLUMNS
                 row = {
                     "NOME DO CLIENTE": project.project_customer_name,
                     "ID DO PROJETO": project.project_id,
@@ -90,15 +102,17 @@ class DinaboxService:
                     "BORDA_FACE_TRASEIRA": part.edge_bottom.name or "",
                     "BORDA_FACE_LE": part.edge_left.name or "",
                     "BORDA_FACE_LD": part.edge_right.name or "",
-                    "LOTE": "", # Preenchido depois pelo PCP
+                    "LOTE": "", 
                     "OBSERVAÇÃO": part.note or "",
                     "DESCRIÇÃO DA PEÇA": part.name,
                     "ID DA PEÇA": part.id,
-                    "LOCAL": part.entity or "",
-                    "DUPLAGEM": "Sim" if "_dup_" in (part.note or "").lower() else "", 
-                    "FURO": "Sim" if part.total_holes > 0 else "Não",
+                    "LOCAL": module.name, # Substituindo entity por nome do módulo para ser mais útil
+                    "DUPLAGEM": "Sim" if is_thickened else "", 
+                    "FURO": "Sim" if (part.total_holes > 0 or (part.machining and len(part.machining) > 0)) else "Não",
                     "OBS": part.note or "",
                     "REFERENCIA": f"{module.ref} - {part.ref}",
+                    "FURACAO_A": part.code_a or "",
+                    "FURACAO_B": part.code_b or "",
                 }
                 rows.append(row)
         
