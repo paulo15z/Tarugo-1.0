@@ -149,11 +149,11 @@ class PartOperacional(DinaboxBaseModel):
         return super().model_validate(obj, **kwargs)
 
 class InputItemOperacional(DinaboxBaseModel):
-    """Hardware/insumo para rastreabilidade operacional."""
+    """Insumos e ferragens do módulo."""
     id: str
     unique_id: str
     category_id: Optional[str] = None
-    category_name: str
+    category_name: Optional[str] = None
     name: str
     description: Optional[str] = ""
     qt: float
