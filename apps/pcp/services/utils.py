@@ -282,26 +282,28 @@ def calcular_roteiro(row) -> str:
 
     # --- Setores de Marcenaria (Montagem e Acabamento) ---
     
-    # MCX: Montagem de Caixa (Caixaria estrutural)
-    # Identificamos por palavras-chave no local (módulo) ou descrição da peça
+    # MCX: Montagem de Caixa (Caixaria estrutural e Estrutura de Gaveta)
+    # Estrutura de gaveta: laterais, fundos, contrafrentes, contra-posteriores
+    palavras_gaveta = ['lateral gaveta', 'fundo gaveta', 'contrafrente', 'contra-frente', 'contra frente', 'contra posterior', 'contra-posterior']
+    eh_estrutura_gaveta = any(p in desc for p in palavras_gaveta) or (('gaveta' in local or 'gaveteiro' in local) and any(p in desc for p in ['lateral', 'fundo', 'base']))
+    
+    # Identificamos caixaria por palavras-chave no local (módulo) ou descrição da peça
     palavras_caixaria = ['balcao', 'balcão', 'aereo', 'aéreo', 'torre', 'gaveteiro', 'caixa', 'interno', 'base', 'lateral', 'prateleira', 'divisor', 'fundo']
     eh_caixaria = any(p in local for p in palavras_caixaria) or any(p in desc for p in palavras_caixaria)
     
     # MPE: Montagem de Portas e Externos (Frentes e acabamentos simples)
-    # Agora utilizando estritamente dinabox_porta vindo do campo ENTITY (mapeado na API)
     entity = str(_row_get(row, 'ENTITY')).strip().lower()
-    eh_contrafrente = 'contrafrente' in desc or 'contra-frente' in desc or 'contra frente' in desc
-    eh_fundo = 'fundo' in desc or 'fundo' in local
+    # MPE não deve incluir estrutura de gavetas
+    eh_mpe = ('dinabox_porta' in entity or eh_porta or eh_frontal or tem_puxador or 'frente' in desc) and not eh_estrutura_gaveta
     
-    # MPE não deve incluir contrafrentes
-    eh_mpe = ('dinabox_porta' in entity or eh_porta or eh_frontal or tem_puxador or 'frente' in desc) and not eh_contrafrente
-    
-    # MAR: Marcenaria Geral (Itens decorativos, painéis, tamponamentos)
-    eh_mar = eh_painel or eh_tamponamento or tem_tamponamento_tag or 'regua' in desc or 'régua' in desc
+    # MAR: Marcenaria Geral (Itens decorativos, painéis, tamponamentos e itens personalizados "T - ")
+    # Qualquer módulo ou peça que comece com "T - " ou tenha referência "T" (ex: T - T566450) vai para MAR
+    eh_tamponamento_t = local.startswith('t -') or local.startswith('t-') or desc.startswith('t -') or desc.startswith('t-')
+    eh_mar = eh_painel or eh_tamponamento or tem_tamponamento_tag or 'regua' in desc or 'régua' in desc or eh_tamponamento_t
     
     # Lógica de Roteamento de Marcenaria
-    # Fundos e caixaria estrutural vão para MCX
-    if (eh_caixaria or eh_fundo) and not eh_mpe and not eh_mar:
+    # Toda estrutura de gaveta e caixaria vai para MCX
+    if (eh_caixaria or eh_estrutura_gaveta) and not eh_mpe and not eh_mar:
         rota.append('MCX')
     elif eh_mpe:
         rota.append('MPE')
