@@ -61,6 +61,7 @@ class ModuleDinabox(BaseModel): #modulo
     edge_right: Optional[EdgeDinabox] = None
     edge_top: Optional[EdgeDinabox] = None
     edge_bottom: Optional[EdgeDinabox] = None
+    inputs: List[Dict] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True, extra="allow")
 

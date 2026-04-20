@@ -29,7 +29,7 @@ class DinaboxRepository:
         pecas: List[PecaOperacional] = []
         for modulo in projeto.woodwork:
             # Extrair insumos do módulo para futura lógica de MCX
-            insumos_modulo = getattr(modulo, "inputs", [])
+            insumos_modulo = modulo.inputs or []
             
             for parte in modulo.parts:
                 # Regras de negócio leves

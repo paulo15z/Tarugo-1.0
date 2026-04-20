@@ -22,7 +22,7 @@ from apps.pcp.services.pcp_interface import (
     reabrir_lote_bipagem,
 )
 from apps.pcp.services.retorno_bipagem_service import RetornoBipagemService
-from apps.pcp.services.pcp_service import processar_arquivo_dinabox
+from apps.pcp.services.processador_roteiro import ProcessadorRoteiroService
 
 
 def _normalizar_chave(chave: str) -> str:
@@ -110,20 +110,11 @@ def pcp_index(request):
 @login_required
 @require_POST
 def pcp_processar(request):
-    """View principal – agora com feature flag para novo pipeline."""
-    if getattr(settings, "USE_NEW_PCP_PIPELINE", False):
-        # Novo pipeline (Fases 1-9)
-        return pcp_processar_novo(request)
-
-    # Legacy (mantido por segurança)
-    return _processar_legacy(request)
-
-
-def pcp_processar_novo(request):
+    """View principal do PCP - Pipeline v2."""
     project_id = request.POST.get("project_id", "").strip()
     lote_str = request.POST.get("lote", "").strip()
-
-    if not project_id or not lote_str.isdigit():
+    
+    if not project_id or not (lote_str and lote_str.isdigit()):
         return JsonResponse({"erro": "project_id e lote são obrigatórios"}, status=400)
 
     try:
@@ -133,7 +124,6 @@ def pcp_processar_novo(request):
             numero_lote=int(lote_str),
             usuario=request.user
         )
-
         return JsonResponse({
             "sucesso": True,
             "pid": resultado.processamento_id,
@@ -144,13 +134,7 @@ def pcp_processar_novo(request):
             "auditoria_count": len(resultado.auditoria or []),
         })
     except Exception as e:
-        return JsonResponse({"erro": str(e)}, status=500)
-
-
-def _processar_legacy(request):
-    """Mantém o fluxo antigo até você remover o legacy."""
-    # (código antigo que já existia – não alterado)
-    ...
+        return JsonResponse({"erro": str(e)}, status=500)...
 
 # ---------------------------------------------------------------------------
 # Ciclo de vida do lote (bipagem)

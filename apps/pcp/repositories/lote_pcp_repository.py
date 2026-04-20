@@ -101,7 +101,8 @@ class LotePCPRepository:
                 atributos_tecnicos={
                     "tags": list(p.tags_markdown),
                     "eh_duplada": p.eh_duplada,
-                    "dinabox_entity": p.dinabox_entity
+                    "dinabox_entity": p.dinabox_entity,
+                    "insumos_modulo": p.atributos_tecnicos.get("insumos_modulo", [])
                 }
             )
 
