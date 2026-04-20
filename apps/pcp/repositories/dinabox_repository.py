@@ -41,6 +41,20 @@ class DinaboxRepository:
                 dinabox_entity = getattr(parte, "entity", None) or getattr(parte, "type", None) or None
                 dinabox_type = getattr(parte, "type", None) or getattr(modulo, "type", None) or None
 
+                # Extração de material exclusiva da peça (sem herança do módulo)
+                material_id = None
+                material_nome = None
+                material_com_veio = False
+
+                if parte.material:
+                    material_id = parte.material.id
+                    material_nome = parte.material.name
+                    material_com_veio = parte.material.vein
+                else:
+                    # Fallback para campos diretos caso o objeto material não exista
+                    material_id = getattr(parte, "material_id", None)
+                    material_nome = getattr(parte, "material_name", None)
+
                 peca = PecaOperacional(
                     id_dinabox=parte.id,
                     ref_completa=f"{modulo.ref} - {parte.ref}",
@@ -58,9 +72,9 @@ class DinaboxRepository:
                     ),
                     dinabox_entity=dinabox_entity,
                     dinabox_type=dinabox_type,
-                    material_id=parte.material.id if parte.material else None,
-                    material_nome=parte.material.name if parte.material else None,
-                    material_com_veio=parte.material.vein if parte.material else False,
+                    material_id=material_id,
+                    material_nome=material_nome,
+                    material_com_veio=material_com_veio,
                     bordas=bordas,
                     furacoes=furacoes,
                     eh_duplada=eh_duplada,

@@ -40,6 +40,8 @@ class PartDinabox(BaseModel): #peça
     thickness: Decimal = Field(..., gt=0)
 
     material: Optional[MaterialDinabox] = None
+    material_id: Optional[str] = None
+    material_name: Optional[str] = None
     note: Optional[str] = None
     code_a: Optional[str] = None
     code_b: Optional[str] = None
@@ -63,6 +65,8 @@ class ModuleDinabox(BaseModel): #modulo
 
     parts: List[PartDinabox] = Field(default_factory=list)
     material: Optional[MaterialDinabox] = None
+    material_id: Optional[str] = None
+    material_name: Optional[str] = None
 
     edge_left: Optional[EdgeDinabox] = None
     edge_right: Optional[EdgeDinabox] = None
