@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator, model_valida
 
 
 class MaterialDinabox(BaseModel): #acabamento
-    id: str
+    id: Optional[str] = None
     name: str
     width: Decimal = Field(..., gt=0)
     height: Decimal = Field(..., gt=0)
@@ -29,7 +29,7 @@ class EdgeDinabox(BaseModel): #borda
 
 
 class PartDinabox(BaseModel): #peça
-    id: str
+    id: Optional[str] = None
     ref: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     type: str = "cabinet"
@@ -57,8 +57,8 @@ class PartDinabox(BaseModel): #peça
 
 
 class ModuleDinabox(BaseModel): #modulo
-    id: str
-    mid: str
+    id: Optional[str] = None
+    mid: Optional[str] = None
     ref: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     type: str = "thickened"
