@@ -1,6 +1,6 @@
 from decimal import Decimal
 from datetime import datetime
-from typing import Optional, Set, Dict, Literal
+from typing import Optional, Set, Dict, Literal, Any
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
@@ -61,6 +61,7 @@ class PecaOperacional(BaseModel): # model tipado para o resto da operação
     # ANOTAÇÕES
     observacoes_original: Optional[str] = None
     tags_markdown: Set[str] = Field(default_factory=set)
+    atributos_tecnicos: Dict[str, Any] = Field(default_factory=dict)
 
     # RESULTADO
     roteiro: Optional[str] = None
