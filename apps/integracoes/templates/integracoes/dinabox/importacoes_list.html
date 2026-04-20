@@ -1,0 +1,88 @@
+{% extends "base/base.html" %}
+
+{% block title %}Fila Dinabox - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Fila de Importacoes Dinabox</h1>
+        <p class="page-subtitle">Acompanha os ambientes concluidos em Projetos aguardando fetch e integracao no pedido.</p>
+    </div>
+    <div class="user-meta" style="gap: 0.5rem;">
+        <a href="{% url 'integracoes:dinabox-projetos-list' %}" class="btn btn-outline">Projetos</a>
+        <a href="{% url 'admin:integracoes_dinaboximportacaoprojeto_changelist' %}" class="btn btn-outline">Abrir no admin</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+    {% for item in status_summary %}
+    <div class="card" style="padding: 1rem;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">{{ item.label }}</div>
+        <div style="font-size: 2rem; font-weight: 800; margin-top: 0.25rem;">{{ item.total }}</div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card" style="margin-bottom: 1rem; padding: 1rem;">
+    <form method="get" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: end;">
+        <div style="flex: 1; min-width: 220px;">
+            <label for="id_q" style="display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 600;">Buscar</label>
+            <input id="id_q" type="text" name="q" value="{{ search }}" placeholder="Project ID, customer ID ou ambiente"
+                   style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem;">
+        </div>
+        <div style="min-width: 220px;">
+            <label for="id_status" style="display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 600;">Status</label>
+            <select id="id_status" name="status" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem; background: #fff;">
+                <option value="">Todos</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Filtrar</button>
+    </form>
+</div>
+
+<div style="margin-bottom: 0.75rem; color: var(--text-muted); font-size: 0.9rem;">
+    Mostrando {{ rows|length }} de {{ total_rows }} importacoes.
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Projeto</th>
+                <th>Cliente</th>
+                <th>Ambiente</th>
+                <th>Status</th>
+                <th>Origem</th>
+                <th>Tentativas</th>
+                <th>Criado</th>
+                <th>Erro</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in rows %}
+            <tr>
+                <td class="mono">{{ item.project_id }}</td>
+                <td class="mono">{{ item.project_customer_id|default:"-" }}</td>
+                <td>{{ item.project_description|default:"-" }}</td>
+                <td>
+                    <span class="badge {% if item.status == 'CONCLUIDO' %}badge-success{% elif item.status == 'ERRO' %}badge-error{% elif item.status == 'PROCESSANDO' %}badge-warning{% else %}badge-neutral{% endif %}">
+                        {{ item.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ item.origem|default:"-" }}</td>
+                <td>{{ item.tentativas }}</td>
+                <td style="font-size: 0.85rem; color: var(--text-muted);">{{ item.criado_em|date:"d/m/Y H:i" }}</td>
+                <td style="max-width: 320px; color: var(--text-muted);">{{ item.ultimo_erro|default:"-"|truncatechars:120 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="padding: 2rem; text-align: center; color: var(--text-muted);">Nenhuma importacao encontrada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -36,7 +36,11 @@
                     <tr>
                         <td class="mono">{{ project_id }}</td>
                         <td>
+                            {% if project_id %}
                             <a href="{% url 'integracoes:dinabox-projeto-detail' project_id %}" class="btn btn-outline" style="padding: 0.35rem 0.6rem;">Abrir</a>
+                            {% else %}
+                            <span class="text-muted">ID indisponível</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}

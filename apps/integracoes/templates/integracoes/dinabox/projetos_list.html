@@ -64,7 +64,11 @@
                 <td><span class="badge badge-neutral">{{ projeto.project_status|default:"-" }}</span></td>
                 <td style="font-size: 0.85rem; color: var(--text-muted);">{{ projeto.project_created|default:"-" }}</td>
                 <td>
+                    {% if projeto.project_id %}
                     <a href="{% url 'integracoes:dinabox-projeto-detail' projeto.project_id %}" class="btn btn-outline" style="padding: 0.35rem 0.6rem;">Detalhes</a>
+                    {% else %}
+                    <span class="text-muted">ID indisponível</span>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

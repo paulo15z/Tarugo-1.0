@@ -4,7 +4,9 @@ from django.db import transaction
 
 from apps.integracoes.models import DinaboxClienteIndex
 from apps.integracoes.dinabox.client import DinaboxAPIClient, DinaboxRequestError
+from apps.integracoes.dinabox.parsers.customer_detail import parse_customer_detail
 from apps.integracoes.dinabox.schemas.api import (
+    DinaboxCustomerDetail,
     DinaboxCustomerListResponse,
     DinaboxGroupDetail,
     DinaboxGroupListResponse,
@@ -63,8 +65,77 @@ class DinaboxApiService:
         payload = self.client.get_customers(page=page, search=search)
         return DinaboxCustomerListResponse(**payload)
 
-    def get_customer_detail(self, customer_id: str) -> dict:
-        return self.client.get_customer(customer_id=customer_id)
+    def get_customer_detail(self, customer_id: str) -> DinaboxCustomerDetail:
+        """
+        Busca detalhe de um cliente na API Dinabox e retorna estrutura tipada.
+        
+        A API Dinabox pode retornar de diferentes formas:
+        1. Cliente isolado com paginação em nível raiz: {'page': 1, 'total': 1, 'customer_id': '...', ...}
+        2. Cliente em 'customer': {'page': 1, 'total': 1, 'customer': {...}}
+        3. Cliente em 'customers' lista: {'customers': [{...}], 'page': 1, 'total': 1}
+        
+        Este método normaliza todas essas formas.
+        
+        Args:
+            customer_id: ID do cliente no Dinabox
+            
+        Returns:
+            DinaboxCustomerDetail com dados validados e normalizados
+            
+        Raises:
+            DinaboxRequestError: Se a requisição falhar
+            ValueError: Se o cliente não for encontrado ou formato inválido
+        """
+        payload = self.client.get_customer(customer_id=customer_id)
+        
+        if not isinstance(payload, dict):
+            raise ValueError(f"Resposta inválida da API Dinabox: esperado dict, recebido {type(payload)}")
+        
+        # Extrai o cliente da resposta
+        customer_data = None
+        
+        # Caso 1: Cliente está em 'customer' (chave singular)
+        if "customer" in payload and isinstance(payload["customer"], dict):
+            customer_data = payload["customer"]
+        
+        # Caso 2: Cliente está em 'customers' (lista)
+        elif "customers" in payload and isinstance(payload["customers"], list):
+            if payload["customers"]:
+                customer_data = payload["customers"][0]
+        
+        # Caso 3: Os dados do cliente estão no nível raiz com paginação
+        # Exemplo: {'page': 1, 'total': 1, 'customer_id': '...', 'customer_name': '...', ...}
+        elif "customer_id" in payload or "customer_name" in payload:
+            # Remove campos de paginação e metadados da resposta
+            pagination_keys = {"page", "total", "quantity", "offset"}
+            customer_data = {k: v for k, v in payload.items() if k not in pagination_keys}
+        
+        if not customer_data:
+            # Log da estrutura para debug
+            keys_preview = list(payload.keys())[:20]
+            raise ValueError(
+                f"Cliente {customer_id} não encontrado ou resposta em formato desconhecido. "
+                f"Chaves na resposta: {keys_preview}"
+            )
+        
+        # Garante que temos customer_id e customer_name
+        if "customer_id" not in customer_data:
+            customer_data["customer_id"] = customer_id
+        
+        if "customer_name" not in customer_data or not customer_data.get("customer_name"):
+            raise ValueError(f"Resposta sem 'customer_name' válido para cliente {customer_id}")
+        
+        # Cria schema e valida
+        try:
+            schema = DinaboxCustomerDetail(**customer_data)
+        except Exception as e:
+            raise ValueError(f"Erro ao validar dados do cliente {customer_id}: {str(e)}")
+        
+        # Validação final: customer_id e customer_name devem estar preenchidos
+        if not schema.customer_id or not schema.customer_name:
+            raise ValueError(f"Cliente {customer_id} sem customer_id ou customer_name válidos após validação")
+        
+        return schema
 
     def create_customer(
         self,

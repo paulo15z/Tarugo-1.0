@@ -1,9 +1,15 @@
+"""
+SCHEMA OPERACIONAL - Dinabox para Bipagem, Fabricação e Rastreabilidade
+
+Responsável por: Fabricação, furação, processos de fábrica, rastreabilidade
+Roteamento: apps/bipagem/
+"""
+
 from datetime import datetime
 from typing import List, Optional, Any
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
+from .base import DinaboxBaseModel
 
-class DinaboxBaseModel(BaseModel):
-    pass
 
 class HoleDetail(DinaboxBaseModel):
     """Detalhe de furo ou rasgo para usinagem."""
@@ -35,6 +41,7 @@ class HoleDetail(DinaboxBaseModel):
                 return None
         return None
 
+
 class PartHoles(DinaboxBaseModel):
     """Furos por face (A, B, C, D, E, F)."""
     face_a: Optional[List[HoleDetail]] = Field(None, alias="A")
@@ -47,11 +54,13 @@ class PartHoles(DinaboxBaseModel):
     
     @property
     def total_holes(self) -> int:
+        """Total de operações de usinagem"""
         count = 0
         for face in [self.face_a, self.face_b, self.face_c, self.face_d, self.face_e, self.face_f]:
             if face:
                 count += len(face)
         return count
+
 
 class EdgeDetail(DinaboxBaseModel):
     """Detalhe de rebordo para um lado."""
@@ -98,45 +107,61 @@ class MaterialInfo(DinaboxBaseModel):
                 return None
         return v
 
+
 class PartOperacional(DinaboxBaseModel):
     """Peça focada em operações de fabricação e rastreabilidade."""
+    
     id: str
     ref: str
     code_a: Optional[str] = None
     code_b: Optional[str] = None
     code_a2: Optional[str] = None
     code_b2: Optional[str] = None
+    
     name: str
     type: str
     entity: str
     count: int = 1
     note: Optional[str] = ""
+    
+    # Dimensões (críticas para corte e usinagem)
     width: float
     height: float
     thickness: float
     weight: float = 0.0
-    edge_thickness: Optional[float] = None
+    
+    # Material
     material: Optional[MaterialInfo] = None
+    
+    # Rebordos (para bordo)
     edge_left: EdgeDetail = Field(default_factory=EdgeDetail)
     edge_right: EdgeDetail = Field(default_factory=EdgeDetail)
     edge_top: EdgeDetail = Field(default_factory=EdgeDetail)
     edge_bottom: EdgeDetail = Field(default_factory=EdgeDetail)
+    
+    # Usinagem (furação, rasgos)
     holes: Optional[PartHoles] = None
-    machining: Optional[List[Any]] = Field(default_factory=list)
     
     @property
     def total_holes(self) -> int:
+        """Total de operações de usinagem nesta peça"""
         return self.holes.total_holes if self.holes else 0
     
     @classmethod
     def model_validate(cls, obj: Any, **kwargs) -> "PartOperacional":
+        """Mapeia campos flat do Dinabox para estrutura aninhada."""
         if isinstance(obj, dict):
+            # Mapear material
             material_data = {k: v for k, v in obj.items() if k.startswith("material_")}
             if material_data:
                 obj["material"] = material_data
+            
+            # Mapear rebordos (edges podem vir como None, string, ou dict)
             for side in ["left", "right", "top", "bottom"]:
                 edge_key = f"edge_{side}"
                 edge_value = obj.get(edge_key)
+                
+                # Se for None ou string, reconstruir como dict
                 if edge_value is None or isinstance(edge_value, str):
                     edge_data = {
                         "name": edge_value if isinstance(edge_value, str) else None,
@@ -146,21 +171,26 @@ class PartOperacional(DinaboxBaseModel):
                         "factory_price": obj.get(f"{edge_key}_factory"),
                     }
                     obj[edge_key] = edge_data
+        
         return super().model_validate(obj, **kwargs)
 
+
 class InputItemOperacional(DinaboxBaseModel):
-    """Insumos e ferragens do módulo."""
+    """Hardware/insumo para rastreabilidade operacional."""
+    
     id: str
     unique_id: str
     category_id: Optional[str] = None
-    category_name: Optional[str] = None
+    category_name: str
     name: str
     description: Optional[str] = ""
     qt: float
     unit: Optional[str] = None
 
+
 class ModuleOperacional(DinaboxBaseModel):
     """Módulo focado em fabricação e montagem."""
+    
     id: str
     mid: str
     ref: str
@@ -168,33 +198,34 @@ class ModuleOperacional(DinaboxBaseModel):
     type: str
     qt: int = 1
     note: Optional[str] = ""
+    
     width: float
     height: float
     thickness: float
-    edge_thickness: Optional[float] = None
     thumbnail: Optional[str] = None
     pre_assembly: Optional[bool] = False
-    edge_left: EdgeDetail = Field(default_factory=EdgeDetail)
-    edge_right: EdgeDetail = Field(default_factory=EdgeDetail)
-    edge_top: EdgeDetail = Field(default_factory=EdgeDetail)
-    edge_bottom: EdgeDetail = Field(default_factory=EdgeDetail)
+    
     parts: List[PartOperacional] = Field(default_factory=list)
     inputs: List[InputItemOperacional] = Field(default_factory=list)
 
     @field_validator("parts", mode="before")
     @classmethod
     def normalize_parts(cls, parts: Any) -> Any:
+        """Prepara cada peca para a validacao aninhada."""
         if not isinstance(parts, list):
             return parts
+
         normalized = []
         for part in parts:
             if not isinstance(part, dict):
                 normalized.append(part)
                 continue
+
             data = dict(part)
             material_data = {k: v for k, v in data.items() if k.startswith("material_")}
             if material_data:
                 data["material"] = material_data
+
             for side in ["left", "right", "top", "bottom"]:
                 edge_key = f"edge_{side}"
                 edge_value = data.get(edge_key)
@@ -203,11 +234,33 @@ class ModuleOperacional(DinaboxBaseModel):
                         "name": edge_value if isinstance(edge_value, str) else None,
                         "material_id": data.get(f"{edge_key}_id"),
                         "perimeter": data.get(f"{edge_key}_perimeter"),
-                        "abs": data.get(f"{edge_key}_abs") or data.get(f"{edge_key}_abs"),
+                        "abs": data.get(f"{edge_key}_abs"),
                         "factory_price": data.get(f"{edge_key}_factory"),
                     }
+
             normalized.append(data)
+
         return normalized
+    
+    @property
+    def total_parts(self) -> int:
+        return len(self.parts)
+    
+    @property
+    def total_holes(self) -> int:
+        """Total de operações de usinagem em todas as peças"""
+        return sum(p.total_holes for p in self.parts)
+    
+    @property
+    def total_edges_to_band(self) -> int:
+        """Total de rebordos a processar"""
+        count = 0
+        for part in self.parts:
+            for edge in [part.edge_left, part.edge_right, part.edge_top, part.edge_bottom]:
+                if edge.name:
+                    count += 1
+        return count
+
 
 class ProjectHoleSummary(DinaboxBaseModel):
     """Resumo de hardware/furos para referência operacional."""
@@ -218,8 +271,11 @@ class ProjectHoleSummary(DinaboxBaseModel):
     dimensions: Optional[str] = None
     weight: Optional[float] = None
 
+
 class DinaboxProjectOperacional(DinaboxBaseModel):
     """Projeto Dinabox focado em operações de fábrica."""
+    
+    # Project metadata
     project_id: str
     project_status: str
     project_version: int
@@ -230,31 +286,59 @@ class DinaboxProjectOperacional(DinaboxBaseModel):
     project_last_modified: str
     project_author_id: Optional[int] = None
     project_author_name: Optional[str] = None
+    
+    # Content for operations
     woodwork: List[ModuleOperacional] = Field(default_factory=list)
-    holes: List[ProjectHoleSummary] = Field(default_factory=[])
+    holes_summary: List[ProjectHoleSummary] = Field(default_factory=[], alias="holes")
+    
+    # Metadata Tarugo
     imported_at: datetime = Field(default_factory=datetime.now)
 
     @model_validator(mode="before")
     @classmethod
     def normalize_root(cls, obj: Any) -> Any:
+        """Preserva o autor do projeto ao validar a raiz."""
         if not isinstance(obj, dict):
             return obj
+
         data = dict(obj)
         if "project_author_id" not in data and "project_author" in data:
             data["project_author_id"] = data.get("project_author")
-        
-        # Normalizar bordas dos módulos
-        if "woodwork" in data:
-            for module in data["woodwork"]:
-                for side in ["left", "right", "top", "bottom"]:
-                    edge_key = f"edge_{side}"
-                    edge_value = module.get(edge_key)
-                    if edge_value is None or isinstance(edge_value, str):
-                        module[edge_key] = {
-                            "name": edge_value if isinstance(edge_value, str) else None,
-                            "material_id": module.get(f"{edge_key}_id"),
-                            "perimeter": module.get(f"{edge_key}_perimeter"),
-                            "abs": module.get(f"{edge_key}_abs"),
-                            "factory_price": module.get(f"{edge_key}_factory"),
-                        }
         return data
+    
+    @property
+    def total_modules(self) -> int:
+        return len(self.woodwork)
+    
+    @property
+    def total_parts(self) -> int:
+        return sum(m.total_parts for m in self.woodwork)
+    
+    @property
+    def total_holes(self) -> int:
+        """Total de operações de usinagem em todo o projeto"""
+        return sum(m.total_holes for m in self.woodwork)
+    
+    @property
+    def total_edges_to_band(self) -> int:
+        """Total de rebordos em todo o projeto"""
+        return sum(m.total_edges_to_band for m in self.woodwork)
+    
+    def get_manufacturing_summary(self) -> dict:
+        """Retorna resumo de operações para planning de fábrica"""
+        return {
+            "project_id": self.project_id,
+            "total_modules": self.total_modules,
+            "total_parts": self.total_parts,
+            "total_holes": self.total_holes,
+            "total_edges_to_band": self.total_edges_to_band,
+            "modules": [
+                {
+                    "name": m.name,
+                    "parts": m.total_parts,
+                    "holes": m.total_holes,
+                    "edges": m.total_edges_to_band
+                }
+                for m in self.woodwork
+            ]
+        }

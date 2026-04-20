@@ -1,122 +1,93 @@
 from decimal import Decimal
-from typing import Optional, List, Any
-
-from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
-
-
-class AtributosTecnicos(BaseModel):
-    """Atributos técnicos extraídos do Dinabox"""
-    acabamento: Optional[str] = None
-    furacao: Optional[str] = None
-    duplagem: Optional[str] = None
-    borda: Optional[str] = None
-    pintura: Optional[str] = None
-    tapecar: Optional[str] = None
-    eletrica: Optional[str] = None
-    curvo: Optional[str] = None
-
-    model_config = ConfigDict(extra="ignore")
+from datetime import datetime
+from typing import Optional, Set, Dict, Literal
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
-class Dimensoes(BaseModel):
-    """Dimensões com parsing robusto (vírgula/ponto/nan)"""
-    comprimento: Optional[Decimal] = Field(None, ge=0)
+class Dimensoes(BaseModel): #dimensoes
     largura: Optional[Decimal] = Field(None, ge=0)
+    altura: Optional[Decimal] = Field(None, ge=0)
     espessura: Optional[Decimal] = Field(None, ge=0)
     metro_quadrado: Optional[Decimal] = Field(None, ge=0)
 
-    @field_validator(
-        "comprimento", "largura", "espessura", "metro_quadrado", mode="before"
-    )
+    @field_validator("largura", "altura", "espessura", "metro_quadrado", mode="before")
     @classmethod
-    def parse_decimal(cls, v: Any) -> Optional[Decimal]:
-        if v is None or str(v).strip() in ("", "nan", "NaN", "0"):
+    def converter_decimal(cls, v):
+        if v is None or str(v).strip() in ("", "nan", "NaN"): #tratamento basico de nulos
             return None
         try:
-            return Decimal(str(v).replace(",", "."))
-        except:
+            return Decimal(str(v).replace(",", ".")) #troca de decimal
+        except Exception:
             return None
 
 
-class Peca(BaseModel):
-    """Peça individual (uma linha do DataFrame)"""
-    # Coluna REFERENCIA - parsing automático
-    referencia: str = Field(..., min_length=1, description="Valor bruto da coluna REFERENCIA")
+class BordaInfo(BaseModel): 
+    face: Literal["left", "right", "top", "bottom"]
+    nome: Optional[str] = None
+    perimetro_mm: Decimal = 0
+    espessura_mm: int = 0
 
-    codigo_modulo: Optional[str] = Field(None, description="ID do módulo quando presente (ex: M2052026)")
-    codigo_peca: Optional[str] = Field(None, min_length=1, description="ID da peça (sempre presente)")
 
-    descricao: str = Field(..., min_length=1)
-    local: Optional[str] = None
-    material: Optional[str] = None
-    codigo_material: Optional[str] = None
+class PecaOperacional(BaseModel): # model tipado para o resto da operação
+    # IDENTIFICAÇÃO
+    id_dinabox: str
+    ref_completa: str
+    ref_modulo: Optional[str] = None
+    ref_peca: Optional[str] = None
+    descricao: str
 
-    dimensoes: Dimensoes = Field(default_factory=Dimensoes)
+    # LOCALIZAÇÃO
+    modulo_ref: str
+    modulo_nome: str
+    contexto: Optional[str] = None
+
+    # GEOMETRIA
     quantidade: int = Field(..., gt=0)
+    dimensoes: Dimensoes
+    material_id: Optional[str] = None
+    material_nome: Optional[str] = None
+    material_com_veio: bool = False
 
-    atributos: AtributosTecnicos = Field(default_factory=AtributosTecnicos)
+    # BORDA 
+    bordas: Dict[str, BordaInfo] = Field(default_factory=dict)
 
-    # campos calculados pelo processamento
+    # PROCESSAMENTO
+    furacoes: Dict[str, Optional[str]] = Field(default_factory=dict)
+    eh_duplada: bool = False
+    dinabox_entity: Optional[str] = None      # ex: "dinabox_porta", "cabinet", "panel"
+    dinabox_type: Optional[str] = None
+
+
+    # ANOTAÇÕES
+    observacoes_original: Optional[str] = None
+    tags_markdown: Set[str] = Field(default_factory=set)
+
+    # RESULTADO
     roteiro: Optional[str] = None
-    plano: Optional[str] = None
+    plano_corte: Optional[str] = None
+    lote_saida: Optional[str] = None
 
-    observacoes: Optional[str] = None
-    lote: Optional[str] = None
-    id_peca_dinabox: Optional[str] = None  # ID DA PEÇA original
+    # AUDITORIA
+    data_criacao: datetime = Field(default_factory=datetime.now)
+    id_auditoria: Optional[str] = None
 
-    # permite todos os campos extras do Dinabox
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(from_attributes=True, extra="allow")
 
-    @model_validator(mode="before")
-    @classmethod
-    def parse_referencia(cls, data: Any) -> Any:
-        """Parseia automaticamente a coluna REFERENCIA antes das validações obrigatórias."""
-        if not isinstance(data, dict):
-            return data
+    def eh_ripa(self) -> bool:
+        return "_ripa_" in self.tags_markdown or "ripa" in self.descricao.lower()
 
-        ref = str(data.get("referencia", "")).strip()
-        if not ref:
-            return data
+    def eh_porta_dinabox(self) -> bool:
+        """Regra forte baseada no entity da API"""
+        if self.dinabox_entity and "dinabox_porta" in self.dinabox_entity.lower():
+            return True
+        
+        return "porta" in self.descricao.lower() and "_ripa_" not in self.tags_markdown
 
-        if " - " in ref:
-            partes = ref.split(" - ", 1)
-            data["codigo_modulo"] = data.get("codigo_modulo") or partes[0].strip()
-            data["codigo_peca"] = data.get("codigo_peca") or partes[1].strip()
-        else:
-            data["codigo_peca"] = data.get("codigo_peca") or ref
+    def tem_furacoes(self) -> bool:
+        return any(self.furacoes.values())
 
-        return data
+    def tem_bordas(self) -> bool:
+        return any(b.nome for b in self.bordas.values())
 
-
-class Modulo(BaseModel):
-    """Módulo do projeto"""
-    nome: str = Field(..., min_length=1)                    # DESCRIÇÃO MÓDULO
-    codigo_modulo: Optional[str] = None                     # ID do módulo (ex: M2052026)
-
-    pecas: List[Peca] = Field(default_factory=list)
-
-
-class Ambiente(BaseModel):
-    """Ambiente do projeto (ex: SOCIAL, COZINHA)"""
-    nome: str = Field(..., min_length=1)                    # NOME DO PROJETO
-    modulos: List[Modulo] = Field(default_factory=list)
-
-
-class Cliente(BaseModel):
-    """Cliente do projeto"""
-    nome: str = Field(..., min_length=1)                    # NOME DO CLIENTE
-    id_projeto: Optional[str] = None                        # ID DO PROJETO
-    ambientes: List[Ambiente] = Field(default_factory=list)
-
-
-class LotePCPInput(BaseModel):
-    """Input principal após processar o arquivo Dinabox"""
-    pid: str = Field(..., min_length=8, max_length=8)
-    arquivo_original: str
-
-    cliente: Cliente
-
-    # ordem de produção (pode vir do arquivo ou ser gerada)
-    ordem_producao: Optional[str] = None
-
-    model_config = ConfigDict(extra="allow")
+    def eh_duplada_de_verdade(self) -> bool:
+        return self.eh_duplada and "_dup_" in self.tags_markdown

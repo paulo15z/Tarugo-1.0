@@ -10,6 +10,11 @@
         <p class="page-subtitle">ID: <span class="mono">{{ projeto.project_id }}</span> | Status: {{ projeto.project_status|default:"-" }}</p>
     </div>
     <div>
+        {% if projeto.project_id %}
+        <a href="{% url 'integracoes:dinabox-projeto-modulos-pecas' projeto.project_id %}" class="btn btn-primary">Ver Módulos e Peças</a>
+        {% else %}
+        <span class="text-muted">Módulos indisponíveis</span>
+        {% endif %}
         <a href="{% url 'integracoes:dinabox-lotes-list' %}" class="btn btn-outline">Ver Lotes</a>
     </div>
 </div>

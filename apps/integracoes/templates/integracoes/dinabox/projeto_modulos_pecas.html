@@ -1,0 +1,115 @@
+{% extends "base/base.html" %}
+
+{% block title %}Módulos e Peças - {{ projeto.projeto.nome|default:"Projeto" }} - Tarugo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{% url 'integracoes:dinabox-projetos-list' %}" style="text-decoration: none; color: var(--text-muted);">&larr; Voltar para projetos</a>
+        <h1 class="page-title" style="margin-top: 0.5rem;">{{ projeto.projeto.nome|default:"Projeto" }}</h1>
+        <p class="page-subtitle">ID: <span class="mono">{{ projeto.projeto.id|default:"-" }}</span> | Cliente: {{ projeto.cliente.nome|default:"-" }}</p>
+    </div>
+    <div>
+        {% if projeto.projeto.id %}
+        <a href="{% url 'integracoes:dinabox-projeto-detail' projeto.projeto.id %}" class="btn btn-outline">Ver Detalhes</a>
+        {% else %}
+        <span class="text-muted">Detalhes indisponíveis</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 style="margin-bottom: 1rem;">Resumo do Projeto</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Total de Módulos</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">{{ projeto.modulos|length }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Total de Peças</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">{{ projeto.pecas|length }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Materiais Diferentes</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">{{ materiais_unicos|length }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Importado em</div>
+            <div style="font-size: 1rem; font-weight: 600;">{{ projeto.metadata.data_importacao|date:"d/m/Y H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; gap: 1.5rem;">
+    {% for modulo in projeto.modulos %}
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0;">{{ modulo.nome }}</h3>
+            <span style="background: var(--accent); color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                {{ modulo.pecas|length }} peça{{ modulo.pecas|length|pluralize:"s" }}
+            </span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border);">
+                        <th style="text-align: left; padding: 0.8rem 0.5rem; font-weight: 600; color: var(--text-muted); font-size: 0.85rem;">DESCRIÇÃO</th>
+                        <th style="text-align: left; padding: 0.8rem 0.5rem; font-weight: 600; color: var(--text-muted); font-size: 0.85rem;">MATERIAL</th>
+                        <th style="text-align: center; padding: 0.8rem 0.5rem; font-weight: 600; color: var(--text-muted); font-size: 0.85rem;">DIMENSÕES</th>
+                        <th style="text-align: center; padding: 0.8rem 0.5rem; font-weight: 600; color: var(--text-muted); font-size: 0.85rem;">QTD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for peca in modulo.pecas %}
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.8rem 0.5rem; font-weight: 500;">{{ peca.descricao }}</td>
+                        <td style="padding: 0.8rem 0.5rem; color: var(--text-muted); font-size: 0.9rem;">{{ peca.material|default:"-" }}</td>
+                        <td style="padding: 0.8rem 0.5rem; text-align: center; font-family: var(--mono); font-size: 0.9rem;">
+                            {% if peca.largura and peca.altura %}
+                                {{ peca.largura }} por {{ peca.altura }}
+                                {% if peca.espessura %} {{ peca.espessura }}{% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.8rem 0.5rem; text-align: center; font-weight: 600; color: var(--accent);">{{ peca.quantidade }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <div style="font-size: 3rem; color: var(--text-dim); margin-bottom: 1rem;">📦</div>
+        <h3 style="color: var(--text-muted); margin-bottom: 0.5rem;">Nenhum módulo encontrado</h3>
+        <p style="color: var(--text-dim);">Este projeto ainda não possui módulos ou peças importadas.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+
+.card h3 {
+    color: var(--text);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+table {
+    margin: 0;
+}
+
+tbody tr:hover {
+    background: var(--surface-raised);
+}
+</style>
+{% endblock %}
