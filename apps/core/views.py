@@ -97,12 +97,16 @@ def entrada(request):
     else:
         form = AuthenticationForm(request)
 
+    # Resolve o parâmetro 'next' de forma segura para o template
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
+
     return render(
         request,
         "core/entrada.html",
         {
             "form": form,
             "modo": "login",
+            "next": next_url,
             "default_redirect": settings.LOGIN_REDIRECT_URL,
         },
     )

@@ -276,7 +276,7 @@
 
           <form method="post" action="{% url 'login' %}">
             {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.POST.next|default:request.GET.next|default:'' }}">
+            <input type="hidden" name="next" value="{{ next }}">
 
             <label for="id_username">Usuário</label>
             <input id="id_username" type="text" name="username" autofocus autocomplete="username" required>
