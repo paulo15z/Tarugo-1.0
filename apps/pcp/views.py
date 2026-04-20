@@ -124,6 +124,26 @@ def pcp_processar(request):
             numero_lote=int(lote_str),
             usuario=request.user
         )
+        # Preparar prévia para o frontend (primeiras 50 peças)
+        previa = []
+        for p in resultado.pecas_finais[:50]:
+            previa.append({
+                "LOTE": p.get("lote_saida", ""),
+                "DESCRICAO_DA_PECA": p.get("descricao", ""),
+                "LOCAL": p.get("modulo_nome", ""),
+                "OBSERVACAO": p.get("observacoes_original", ""),
+                "PLANO": p.get("plano_corte", ""),
+                "ROTEIRO": p.get("roteiro", ""),
+            })
+
+        # Resumo por roteiro
+        roteiro_counts = {}
+        for p in resultado.pecas_finais:
+            rot = p.get("roteiro", "NENHUM")
+            roteiro_counts[rot] = roteiro_counts.get(rot, 0) + 1
+        
+        resumo_roteiro = [{"roteiro": k, "qtd": v} for k, v in roteiro_counts.items()]
+
         return JsonResponse({
             "sucesso": True,
             "pid": resultado.processamento_id,
@@ -132,6 +152,8 @@ def pcp_processar(request):
             "resumo_processamento": resultado.resumo.model_dump(),
             "nome_saida": resultado.arquivo_xls,
             "auditoria_count": len(resultado.auditoria or []),
+            "previa": previa,
+            "resumo": resumo_roteiro,
         })
     except Exception as e:
         return JsonResponse({"erro": str(e)}, status=500)
