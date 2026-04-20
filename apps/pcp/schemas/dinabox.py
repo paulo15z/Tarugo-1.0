@@ -1,6 +1,6 @@
 from decimal import Decimal
 from typing import Optional, List, Dict
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 
 
 class MaterialDinabox(BaseModel): #acabamento
@@ -19,6 +19,13 @@ class EdgeDinabox(BaseModel): #borda
     thickness: int = 0
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def validate_edge(cls, value):
+        if isinstance(value, str):
+            return {"name": value}
+        return value
 
 
 class PartDinabox(BaseModel): #peça
