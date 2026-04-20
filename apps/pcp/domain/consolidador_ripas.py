@@ -63,30 +63,30 @@ class ConsolidadorRipas:
             if not grupo:
                 continue
 
-        base = grupo[0]
-        total_pecas = sum(p.quantidade for p in grupo)
+            base = grupo[0]
+            total_pecas = sum(p.quantidade for p in grupo)
 
-        altura_ripa = base.dimensoes.altura or Decimal("0")
-        largura_ripa = base.dimensoes.largura or Decimal("0")
+            altura_ripa = base.dimensoes.altura or Decimal("0")
+            largura_ripa = base.dimensoes.largura or Decimal("0")
 
-        if altura_ripa <= 0:
-            pecas_finais.extend(grupo)  # não dá pra consolidar
-            continue
+            if altura_ripa <= 0:
+                pecas_finais.extend(grupo)  # não dá pra consolidar
+                continue
 
 
             # calculo de tiras
-        altura_util = self.config.altura_chapa_bruta_mm - self.config.margem_refilo_mm
-        altura_por_peca = altura_ripa + self.config.espessura_serra_mm
+            altura_util = self.config.altura_chapa_bruta_mm - self.config.margem_refilo_mm
+            altura_por_peca = altura_ripa + self.config.espessura_serra_mm
 
-        if altura_por_peca > altura_util:
-            pecas_finais.extend(grupo)
-            auditorias.append({
-                "tipo": "consolidacao_ripa",
-                "id_peca": base.id_dinabox,
-                "mensagem": f"Ripa muito alta ({altura_ripa}mm > chapa útil)",
-                "acao": "mantida_original"
-            })
-            continue
+            if altura_por_peca > altura_util:
+                pecas_finais.extend(grupo)
+                auditorias.append({
+                        "tipo": "consolidacao_ripa",
+                        "id_peca": base.id_dinabox,
+                        "mensagem": f"Ripa muito alta ({altura_ripa}mm > chapa útil)",
+                        "acao": "mantida_original"
+                    })
+                continue
 
         max_pecas_por_tira = math.floor(altura_ripa / altura_por_peca)
         qtd_tiras = math.ceil(total_pecas / max_pecas_por_tira)

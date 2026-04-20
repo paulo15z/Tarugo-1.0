@@ -134,7 +134,7 @@ def pcp_processar(request):
             "auditoria_count": len(resultado.auditoria or []),
         })
     except Exception as e:
-        return JsonResponse({"erro": str(e)}, status=500)...
+        return JsonResponse({"erro": str(e)}, status=500)
 
 # ---------------------------------------------------------------------------
 # Ciclo de vida do lote (bipagem)
