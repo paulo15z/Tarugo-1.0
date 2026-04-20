@@ -2,23 +2,20 @@
 Gerador de XLS para o novo pipeline PCP.
 Recebe List[PecaOperacional] e gera arquivo compatível com a operação atual.
 """
-
 from io import BytesIO
 import pandas as pd
 from typing import List
 from apps.pcp.schemas.peca import PecaOperacional
 
-
-def gerar_xls_roteiro(pecas: List[PecaOperacional], nome_saida: str = None) -> bytes:
+def gerar_xls_roteiro(pecas: List[PecaOperacional]) -> bytes:
     """
-    Converte lista de PecaOperacional → Excel no formato esperado pelo cutplanning (20/04 vai ter alteração no mapeamento).
-    Mantém compatibilidade com colunas antigas.
+    Converte lista de PecaOperacional → Excel no formato esperado pelo cutplanning.
+    Mantém compatibilidade com colunas antigas e usa vírgula como separador decimal.
     """
     rows = []
-
     for p in pecas:
         row = {
-            "LOTE": "",  # será preenchido na view
+            "LOTE": p.lote_saida or "",
             "ID DA PEÇA": p.id_dinabox,
             "REFERÊNCIA DA PEÇA": p.ref_completa,
             "DESCRIÇÃO DA PEÇA": p.descricao,
@@ -43,7 +40,7 @@ def gerar_xls_roteiro(pecas: List[PecaOperacional], nome_saida: str = None) -> b
         rows.append(row)
 
     df = pd.DataFrame(rows)
-
+    
     # Ordenação recomendada para a fábrica
     colunas_ordem = [
         "LOTE", "ID DA PEÇA", "REFERÊNCIA DA PEÇA", "DESCRIÇÃO DA PEÇA", "LOCAL",
@@ -52,11 +49,12 @@ def gerar_xls_roteiro(pecas: List[PecaOperacional], nome_saida: str = None) -> b
         "BORDA_FACE_FRENTE", "BORDA_FACE_TRASEIRA", "BORDA_FACE_LE", "BORDA_FACE_LD",
         "FURO", "OBSERVAÇÃO", "OBS", "PLANO", "ROTEIRO", "CONTEXTO"
     ]
+    
     df = df.reindex(columns=[c for c in colunas_ordem if c in df.columns])
 
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name="PCP")
-
+    
     output.seek(0)
     return output.getvalue()

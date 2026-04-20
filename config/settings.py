@@ -164,3 +164,6 @@ DINABOX_VERIFY_SSL = _env_bool("DINABOX_VERIFY_SSL", "1")
 LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
  
+
+# ── PCP PIPELINE ──────────────────────────────────────────────
+USE_NEW_PCP_PIPELINE = True

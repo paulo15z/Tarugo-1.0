@@ -1,14 +1,11 @@
 """
 Repository responsável por transformar JSON da API Dinabox em objetos de domínio.
-
 """
-
 from typing import List, Set, Dict
 import re
 from apps.integracoes.dinabox.api_service import DinaboxApiService   
 from apps.pcp.schemas.dinabox import ProjectoDinabox
 from apps.pcp.schemas.peca import PecaOperacional, Dimensoes, BordaInfo
-
 
 class DinaboxRepository:
     """Converte dados brutos da API Dinabox → PecaOperacional validada."""
@@ -30,18 +27,19 @@ class DinaboxRepository:
             raise ValueError("Projeto sem marcenaria (nenhuma peça encontrada)")
 
         pecas: List[PecaOperacional] = []
-
         for modulo in projeto.woodwork:
+            # Extrair insumos do módulo para futura lógica de MCX
+            insumos_modulo = getattr(modulo, "inputs", [])
+            
             for parte in modulo.parts:
                 # Regras de negócio leves
                 eh_duplada = DinaboxRepository._detectar_duplagem(parte.note)
                 tags = DinaboxRepository._extrair_tags(parte.note)
                 bordas = DinaboxRepository._mapear_bordas(parte, modulo)
                 furacoes = DinaboxRepository._mapear_furacoes(parte)
-
+                
                 dinabox_entity = getattr(parte, "entity", None) or getattr(parte, "type", None) or None
                 dinabox_type = getattr(parte, "type", None) or getattr(modulo, "type", None) or None
-
 
                 peca = PecaOperacional(
                     id_dinabox=parte.id,
@@ -68,6 +66,10 @@ class DinaboxRepository:
                     eh_duplada=eh_duplada,
                     observacoes_original=parte.note,
                     tags_markdown=tags,
+                    # Armazenar insumos do módulo na peça para auditoria/lógica futura
+                    atributos_tecnicos={
+                        "insumos_modulo": insumos_modulo
+                    }
                 )
                 pecas.append(peca)
 
