@@ -434,31 +434,30 @@
     }
 
     function verificarPronto() {
-        const loteLegacy = document.getElementById('input-lote-legacy').value && parseInt(document.getElementById('input-lote-legacy').value) > 0;
-        const loteApi = document.getElementById('input-lote-api').value && parseInt(document.getElementById('input-lote-api').value) > 0;
-        const projectId = document.getElementById('input-project-id').value.trim();
+        const inputLoteApi = document.getElementById('input-lote-api');
+        const inputProjectId = document.getElementById('input-project-id');
+        const btnProcessarApi = document.getElementById('btn-processar-api');
 
-        document.getElementById('btn-processar-legacy').disabled = !(arquivoAtual && loteLegacy);
-        document.getElementById('btn-processar-api').disabled = !(projectId && loteApi);
+        if (!inputLoteApi || !inputProjectId || !btnProcessarApi) return;
+
+        const loteApi = inputLoteApi.value && parseInt(inputLoteApi.value) > 0;
+        const projectId = inputProjectId.value.trim();
+
+        btnProcessarApi.disabled = !(projectId && loteApi);
     }
 
     // Processar
     async function processarArquivo(modo) {
-        const lote = modo === 'api' ? document.getElementById('input-lote-api').value : document.getElementById('input-lote-legacy').value;
+        const lote = document.getElementById('input-lote-api').value;
         const projectId = document.getElementById('input-project-id').value.trim();
         
-        if (modo === 'api' && (!projectId || !lote)) return;
-        if (modo === 'legacy' && (!arquivoAtual || !lote)) return;
+        if (!projectId || !lote) return;
 
         const formData = new FormData();
-        if (modo === 'api') {
-            formData.append('project_id', projectId);
-        } else {
-            formData.append('arquivo', arquivoAtual);
-        }
+        formData.append('project_id', projectId);
         formData.append('lote', lote);
 
-        const btn = modo === 'api' ? document.getElementById('btn-processar-api') : document.getElementById('btn-processar-legacy');
+        const btn = document.getElementById('btn-processar-api');
         btn.disabled = true;
         document.getElementById('progress-wrap').classList.remove('hidden');
         document.getElementById('alert-err').classList.add('hidden');
