@@ -31,8 +31,7 @@ def gerar_xls_roteiro(pecas: List[PecaOperacional]) -> bytes:
             "BORDA_FACE_LE": p.bordas.get("left").nome if p.bordas and p.bordas.get("left") else "",
             "BORDA_FACE_LD": p.bordas.get("right").nome if p.bordas and p.bordas.get("right") else "",
             "FURO": "SIM" if p.tem_furacoes() else "",
-            "OBSERVAÇÃO": p.observacoes_original or "",
-            "OBS": p.observacoes_original or "",
+            "UREF": p.uref or "",
             "PLANO": p.plano_corte or "11",
             "ROTEIRO": p.roteiro or "COR",
             "CONTEXTO": p.contexto or "",
@@ -47,7 +46,7 @@ def gerar_xls_roteiro(pecas: List[PecaOperacional]) -> bytes:
         "MATERIAL DA PEÇA", "CÓDIGO DO MATERIAL", "ESPESSURA",
         "LARGURA DA PEÇA", "ALTURA DA PEÇA", "QUANTIDADE",
         "BORDA_FACE_FRENTE", "BORDA_FACE_TRASEIRA", "BORDA_FACE_LE", "BORDA_FACE_LD",
-        "FURO", "OBSERVAÇÃO", "OBS", "PLANO", "ROTEIRO", "CONTEXTO"
+        "FURO", "UREF", "PLANO", "ROTEIRO", "CONTEXTO"
     ]
     
     df = df.reindex(columns=[c for c in colunas_ordem if c in df.columns])

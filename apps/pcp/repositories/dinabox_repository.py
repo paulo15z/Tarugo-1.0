@@ -40,6 +40,7 @@ class DinaboxRepository:
                 
                 dinabox_entity = getattr(parte, "entity", None) or getattr(parte, "type", None) or None
                 dinabox_type = getattr(parte, "type", None) or getattr(modulo, "type", None) or None
+                uref = getattr(parte, "uref", None) or getattr(parte, "user_reference", None) or None
 
                 # Extração de material exclusiva da peça (sem herança do módulo)
                 material_id = None
@@ -78,6 +79,7 @@ class DinaboxRepository:
                     bordas=bordas,
                     furacoes=furacoes,
                     eh_duplada=eh_duplada,
+                    uref=uref,
                     observacoes_original=parte.note,
                     tags_markdown=tags,
                     # Armazenar insumos do módulo na peça para auditoria/lógica futura

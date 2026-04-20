@@ -66,23 +66,26 @@ class RoteiroCalculator:
                 setores.append(Setor.XBOR)
 
         # 4. Lógica de Marcenaria (MCX, MPE, MAR)
+        # Requisito: MPE deve usar exclusivamente dinabox_entity == 'dinabox_porta'
+        # Requisito: MCX deve usar o campo 'uref' contendo 'MCX'
         
-        # MCX: Montagem de Caixa
-        palavras_caixaria = ["balcao", "balcão", "aereo", "aéreo", "torre", "gaveteiro", "caixa", "interno", "base", "lateral", "prateleira", "divisor", "fundo"]
-        eh_caixaria = any(p in local for p in palavras_caixaria) or any(p in desc for p in palavras_caixaria)
+        uref = (peca.uref or "").upper()
         
-        # MPE: Montagem de Portas e Externos
-        eh_mpe = peca.eh_porta_dinabox() or 'frente' in desc
+        # MPE: Montagem de Portas e Externos (Regra Estrita)
+        eh_mpe = peca.dinabox_entity == "dinabox_porta"
         
-        # MAR: Marcenaria Geral
+        # MCX: Montagem de Caixa (Regra Técnica via UREF)
+        eh_mcx = "MCX" in uref
+        
+        # MAR: Marcenaria Geral (Heurística técnica residual)
         eh_mar = "_painel_" in obs or "tamponamento" in desc or "regua" in desc or "régua" in desc or local.startswith('t -') or local.startswith('t-')
 
-        if eh_caixaria and not eh_mpe and not eh_mar:
+        if eh_mcx:
             setores.append(Setor.MCX)
         elif eh_mpe:
             setores.append(Setor.MPE)
             setores.append(Setor.MAR)
-        elif eh_mar or (peca.eh_ripa() and not eh_caixaria):
+        elif eh_mar:
             setores.append(Setor.MAR)
 
         # 5. Especiais

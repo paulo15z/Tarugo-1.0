@@ -56,9 +56,42 @@ class PlanoCorteCalculator:
 
     @staticmethod
     def determinar(peca: PecaOperacional) -> DecisaoPlano:
-        for predicado, plano, confianca, descricao in PlanoCorteCalculator.DECISOES_ORDENADAS:
-            if predicado(peca):
-                return DecisaoPlano(plano=plano, condicao_aplicada=descricao, confianca=confianca)
+        # Requisito: Planos de corte devem ser calculados APÓS o roteiro.
+        # O plano 04 (MCX) usa o sinal do roteiro para se definir.
+        roteiro = peca.roteiro or ""
+
+        # 1. Verificações de alta prioridade (Tags e Tipos Específicos)
+        if peca.eh_ripa() or "_ripa_" in peca.tags_markdown:
+            return DecisaoPlano(plano=PlanoCorte.RIPA_CORTE, condicao_aplicada="é_ripa", confianca="high")
+        
+        if "_pin_" in peca.tags_markdown or "PIN" in roteiro:
+            return DecisaoPlano(plano=PlanoCorte.PINTURA, condicao_aplicada="tem_tag_pintura", confianca="high")
+            
+        if "_lamina_" in peca.tags_markdown or (peca.material_nome and "lamina" in peca.material_nome.lower()):
+            return DecisaoPlano(plano=PlanoCorte.LAMINA, condicao_aplicada="é_lamina", confianca="high")
+            
+        if "_painel_" in peca.tags_markdown or "_passagem_" in peca.tags_markdown:
+            return DecisaoPlano(plano=PlanoCorte.PAINEL, condicao_aplicada="é_painel_ou_passagem", confianca="high")
+
+        if peca.eh_duplada_de_verdade() or "DUP" in roteiro:
+            return DecisaoPlano(plano=PlanoCorte.DUP, condicao_aplicada="é_duplada", confianca="high")
+            
+        if "_pre_" in peca.tags_markdown or "_prem_" in peca.tags_markdown:
+            return DecisaoPlano(plano=PlanoCorte.PRE_MONTAGEM, condicao_aplicada="tem_tag_pre", confianca="high")
+
+        # 2. Verificações baseadas no Roteiro (Sinal do Roteiro)
+        if "MCX" in roteiro:
+            return DecisaoPlano(plano=PlanoCorte.MCX, condicao_aplicada="sinal_roteiro_mcx", confianca="high")
+            
+        if "MPE" in roteiro:
+            return DecisaoPlano(plano=PlanoCorte.MPE, condicao_aplicada="sinal_roteiro_mpe", confianca="high")
+
+        # 3. Fallbacks (Heurísticas de média/baixa confiança)
+        if peca.eh_porta_dinabox():
+            return DecisaoPlano(plano=PlanoCorte.MPE, condicao_aplicada="é_porta", confianca="medium")
+            
+        if any(kw in peca.descricao.lower() for kw in ["caixa", "gaveta"]):
+            return DecisaoPlano(plano=PlanoCorte.MCX, condicao_aplicada="é_caixaria", confianca="medium")
         
         return DecisaoPlano(plano=PlanoCorte.OUTROS, condicao_aplicada="fallback", confianca="low")
 

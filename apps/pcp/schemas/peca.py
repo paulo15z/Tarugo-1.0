@@ -59,6 +59,7 @@ class PecaOperacional(BaseModel): # model tipado para o resto da operação
 
 
     # ANOTAÇÕES
+    uref: Optional[str] = None
     observacoes_original: Optional[str] = None
     tags_markdown: Set[str] = Field(default_factory=set)
 
