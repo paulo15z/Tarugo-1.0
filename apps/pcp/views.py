@@ -22,7 +22,7 @@ from apps.pcp.services.pcp_interface import (
     reabrir_lote_bipagem,
 )
 from apps.pcp.services.retorno_bipagem_service import RetornoBipagemService
-from apps.pcp.services.pcp_service import processar_arquivo_dinabox
+from apps.pcp.services.processador_roteiro import ProcessadorRoteiroService
 
 
 def _normalizar_chave(chave: str) -> str:
@@ -107,88 +107,56 @@ def pcp_index(request):
 # Processamento
 # ---------------------------------------------------------------------------
 
-@require_POST
 @login_required
+@require_POST
 def pcp_processar(request):
-    if not _user_pode_gerenciar_pcp(request.user):
-        return _json_forbidden()
+    """View principal do PCP - Pipeline v2."""
+    project_id = request.POST.get("project_id", "").strip()
+    lote_str = request.POST.get("lote", "").strip()
     
-    arquivo = request.FILES.get('arquivo')
-    project_id = request.POST.get('project_id', '').strip()
-    lote_str = request.POST.get('lote', '').strip()
-
-    if not arquivo and not project_id:
-        return JsonResponse({'erro': 'Envie um arquivo ou informe o ID do projeto Dinabox.'}, status=400)
-
-    if not lote_str or not lote_str.isdigit() or int(lote_str) <= 0:
-        return JsonResponse({'erro': 'Informe um numero de lote valido.'}, status=400)
+    if not project_id or not (lote_str and lote_str.isdigit()):
+        return JsonResponse({"erro": "project_id e lote são obrigatórios"}, status=400)
 
     try:
-        from apps.pcp.services.pcp_service import processar_projeto_dinabox
-
-        if project_id:
-            df, xls_bytes, nome_saida, pid, resumo_processamento = processar_projeto_dinabox(
-                project_id,
-                int(lote_str),
-            )
-            nome_display = f"Projeto {project_id} (API)"
-        else:
-            df, xls_bytes, nome_saida, pid, resumo_processamento = processar_arquivo_dinabox(
-                arquivo,
-                int(lote_str),
-            )
-            nome_display = arquivo.name
-
-        processamento = ProcessamentoPCP.objects.create(
-            id=pid,
-            nome_arquivo=nome_display,
-            lote=int(lote_str),
-            total_pecas=len(df),
-            usuario=request.user if request.user.is_authenticated else None,
+        service = ProcessadorRoteiroService()
+        resultado = service.processar_projeto_dinabox(
+            project_id=project_id,
+            numero_lote=int(lote_str),
+            usuario=request.user
         )
+        # Preparar prévia para o frontend (primeiras 50 peças)
+        previa = []
+        for p in resultado.pecas_finais[:50]:
+            previa.append({
+                "LOTE": p.get("lote_saida", ""),
+                "DESCRICAO_DA_PECA": p.get("descricao", ""),
+                "LOCAL": p.get("modulo_nome", ""),
+                "OBSERVACAO": p.get("observacoes_original", ""),
+                "PLANO": p.get("plano_corte", ""),
+                "ROTEIRO": p.get("roteiro", ""),
+            })
 
-        arquivo_content = ContentFile(xls_bytes, name=nome_saida)
-        processamento.arquivo_saida.save(nome_saida, arquivo_content, save=True)
-
-        cols_previa = ['DESCRICAO DA PECA', 'DESCRIÇÃO DA PEÇA', 'LOCAL', 'PLANO', 'ROTEIRO']
-        if 'LOTE' in df.columns:
-            cols_previa.insert(0, 'LOTE')
-        if 'OBSERVACAO' in df.columns or 'OBSERVA??O' in df.columns:
-            cols_previa.insert(3, 'OBSERVACAO')
-
-        cols_existentes = []
-        variantes = {
-            'DESCRICAO DA PECA': 'DESCRI??O DA PE?A',
-            'DESCRIÇÃO DA PEÇA': 'DESCRI??O DA PE?A',
-            'OBSERVACAO': 'OBSERVA??O',
-        }
-        for col in cols_previa:
-            if col in df.columns:
-                cols_existentes.append(col)
-                continue
-            coluna_real = variantes.get(col)
-            if coluna_real and coluna_real in df.columns:
-                cols_existentes.append(coluna_real)
-
-        previa_raw = df[cols_existentes].head(50).fillna('').to_dict(orient='records')
-        previa = [{_normalizar_chave(k): v for k, v in row.items()} for row in previa_raw]
-
-        resumo_df = df['ROTEIRO'].fillna('SEM ROTEIRO').astype(str).value_counts().reset_index()
-        resumo_df.columns = ['roteiro', 'qtd']
-        resumo = resumo_df.to_dict(orient='records')
+        # Resumo por roteiro
+        roteiro_counts = {}
+        for p in resultado.pecas_finais:
+            rot = p.get("roteiro", "NENHUM")
+            roteiro_counts[rot] = roteiro_counts.get(rot, 0) + 1
+        
+        resumo_roteiro = [{"roteiro": k, "qtd": v} for k, v in roteiro_counts.items()]
 
         return JsonResponse({
-            'pid': pid,
-            'lote': int(lote_str),
-            'total': len(df),
-            'resumo_processamento': resumo_processamento,
-            'previa': previa,
-            'resumo': resumo,
-            'nome_saida': nome_saida,
+            "sucesso": True,
+            "pid": resultado.processamento_id,
+            "lote": int(lote_str),
+            "total": len(resultado.pecas_finais),
+            "resumo_processamento": resultado.resumo.model_dump(),
+            "nome_saida": resultado.arquivo_xls,
+            "auditoria_count": len(resultado.auditoria or []),
+            "previa": previa,
+            "resumo": resumo_roteiro,
         })
     except Exception as e:
-        return JsonResponse({'erro': str(e)}, status=500)
-
+        return JsonResponse({"erro": str(e)}, status=500)
 
 # ---------------------------------------------------------------------------
 # Ciclo de vida do lote (bipagem)

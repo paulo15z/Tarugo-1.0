@@ -1,14 +1,11 @@
 """
 Repository responsável por transformar JSON da API Dinabox em objetos de domínio.
-
 """
-
 from typing import List, Set, Dict
 import re
 from apps.integracoes.dinabox.api_service import DinaboxApiService   
 from apps.pcp.schemas.dinabox import ProjectoDinabox
 from apps.pcp.schemas.peca import PecaOperacional, Dimensoes, BordaInfo
-
 
 class DinaboxRepository:
     """Converte dados brutos da API Dinabox → PecaOperacional validada."""
@@ -30,18 +27,34 @@ class DinaboxRepository:
             raise ValueError("Projeto sem marcenaria (nenhuma peça encontrada)")
 
         pecas: List[PecaOperacional] = []
-
         for modulo in projeto.woodwork:
+            # Extrair insumos do módulo para futura lógica de MCX
+            insumos_modulo = modulo.inputs or []
+            
             for parte in modulo.parts:
                 # Regras de negócio leves
                 eh_duplada = DinaboxRepository._detectar_duplagem(parte.note)
                 tags = DinaboxRepository._extrair_tags(parte.note)
                 bordas = DinaboxRepository._mapear_bordas(parte, modulo)
                 furacoes = DinaboxRepository._mapear_furacoes(parte)
-
+                
                 dinabox_entity = getattr(parte, "entity", None) or getattr(parte, "type", None) or None
                 dinabox_type = getattr(parte, "type", None) or getattr(modulo, "type", None) or None
+                uref = getattr(parte, "uref", None) or getattr(parte, "user_reference", None) or None
 
+                # Extração de material exclusiva da peça (sem herança do módulo)
+                material_id = None
+                material_nome = None
+                material_com_veio = False
+
+                if parte.material:
+                    material_id = parte.material.id
+                    material_nome = parte.material.name
+                    material_com_veio = parte.material.vein
+                else:
+                    # Fallback para campos diretos caso o objeto material não exista
+                    material_id = getattr(parte, "material_id", None)
+                    material_nome = getattr(parte, "material_name", None)
 
                 peca = PecaOperacional(
                     id_dinabox=parte.id,
@@ -60,14 +73,19 @@ class DinaboxRepository:
                     ),
                     dinabox_entity=dinabox_entity,
                     dinabox_type=dinabox_type,
-                    material_id=parte.material.id if parte.material else None,
-                    material_nome=parte.material.name if parte.material else None,
-                    material_com_veio=parte.material.vein if parte.material else False,
+                    material_id=material_id,
+                    material_nome=material_nome,
+                    material_com_veio=material_com_veio,
                     bordas=bordas,
                     furacoes=furacoes,
                     eh_duplada=eh_duplada,
+                    uref=uref,
                     observacoes_original=parte.note,
                     tags_markdown=tags,
+                    # Armazenar insumos do módulo na peça para auditoria/lógica futura
+                    atributos_tecnicos={
+                        "insumos_modulo": insumos_modulo
+                    }
                 )
                 pecas.append(peca)
 

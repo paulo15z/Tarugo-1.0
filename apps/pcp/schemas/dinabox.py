@@ -1,10 +1,10 @@
 from decimal import Decimal
 from typing import Optional, List, Dict
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 
 
 class MaterialDinabox(BaseModel): #acabamento
-    id: str
+    id: Optional[str] = None
     name: str
     width: Decimal = Field(..., gt=0)
     height: Decimal = Field(..., gt=0)
@@ -20,9 +20,16 @@ class EdgeDinabox(BaseModel): #borda
 
     model_config = ConfigDict(from_attributes=True)
 
+    @model_validator(mode='before')
+    @classmethod
+    def validate_edge(cls, value):
+        if isinstance(value, str):
+            return {"name": value}
+        return value
+
 
 class PartDinabox(BaseModel): #peça
-    id: str
+    id: Optional[str] = None
     ref: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     type: str = "cabinet"
@@ -33,6 +40,8 @@ class PartDinabox(BaseModel): #peça
     thickness: Decimal = Field(..., gt=0)
 
     material: Optional[MaterialDinabox] = None
+    material_id: Optional[str] = None
+    material_name: Optional[str] = None
     note: Optional[str] = None
     code_a: Optional[str] = None
     code_b: Optional[str] = None
@@ -48,19 +57,22 @@ class PartDinabox(BaseModel): #peça
 
 
 class ModuleDinabox(BaseModel): #modulo
-    id: str
-    mid: str
+    id: Optional[str] = None
+    mid: Optional[str] = None
     ref: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     type: str = "thickened"
 
     parts: List[PartDinabox] = Field(default_factory=list)
     material: Optional[MaterialDinabox] = None
+    material_id: Optional[str] = None
+    material_name: Optional[str] = None
 
     edge_left: Optional[EdgeDinabox] = None
     edge_right: Optional[EdgeDinabox] = None
     edge_top: Optional[EdgeDinabox] = None
     edge_bottom: Optional[EdgeDinabox] = None
+    inputs: List[Dict] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True, extra="allow")
 
