@@ -7,11 +7,17 @@ from asgiref.sync import sync_to_async
 from django.db import transaction
 from django.utils import timezone
 
-from apps.integracoes.dinabox.schemas import (
-    DinaboxProjectOperacional,
-    DinaboxProjetoConcluidoEventoSchema,
-    DinaboxProjetoPedidoSchema,
-)
+try:
+    from apps.integracoes.dinabox.schemas import (
+        DinaboxProjectOperacional,
+        DinaboxProjetoConcluidoEventoSchema,
+        DinaboxProjetoPedidoSchema,
+    )
+except (ImportError, ModuleNotFoundError):
+    # Travando erros de importação para manter o app rodável sem a API completa
+    DinaboxProjectOperacional = None
+    DinaboxProjetoConcluidoEventoSchema = None
+    DinaboxProjetoPedidoSchema = None
 from apps.integracoes.models import DinaboxImportacaoProjeto, StatusImportacaoProjeto
 
 

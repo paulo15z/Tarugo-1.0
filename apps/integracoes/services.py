@@ -10,11 +10,17 @@ from typing import Dict, Any, Optional
 from django.db import transaction
 
 from .models import MapeamentoMaterial, DinaboxClienteIndex
-from .dinabox.schemas import (
-    DinaboxProjectOperacional,
-    DinaboxProjectLogistico,
-    DinaboxProjectAdministrativo,
-)
+try:
+    from .dinabox.schemas import (
+        DinaboxProjectOperacional,
+        DinaboxProjectLogistico,
+        DinaboxProjectAdministrativo,
+    )
+except (ImportError, ModuleNotFoundError):
+    # Travando erros de importação para manter o app rodável sem a API completa
+    DinaboxProjectOperacional = None
+    DinaboxProjectLogistico = None
+    DinaboxProjectAdministrativo = None
 
 
 class DinaboxIntegrationService:
