@@ -101,8 +101,8 @@ class ProcessamentoPCPService:
                 df.loc[mask, 'OBSERVAÇÃO'] = df.loc[mask, 'OBSERVAÇÃO'].fillna('') + ' _dup_ '
 
         # 7. Gerar XLS
-        xls_buf = gerar_xls_roteiro(df)
-        xls_bytes = xls_buf.getvalue()
+        # A função gerar_xls_roteiro já retorna bytes brutos
+        xls_bytes = gerar_xls_roteiro(df)
 
         # 8. Salvar
         pid = str(uuid.uuid4())[:8]
