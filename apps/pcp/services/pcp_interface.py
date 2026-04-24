@@ -1,7 +1,10 @@
 from datetime import timezone
 from apps.pcp.models.processamento import ProcessamentoPCP
 from apps.pcp.models.lote import LotePCP, PecaPCP
-from apps.pcp.services.processador_roteiro import ProcessadorRoteiroService
+try:
+    from apps.pcp.services.processador_roteiro import ProcessadorRoteiroService
+except (ImportError, ModuleNotFoundError):
+    ProcessadorRoteiroService = None
 
 
 def liberar_lote_para_bipagem(pid: str, usuario=None):

@@ -5,16 +5,27 @@ from django.db import transaction
 from apps.integracoes.models import DinaboxClienteIndex
 from apps.integracoes.dinabox.client import DinaboxAPIClient, DinaboxRequestError
 from apps.integracoes.dinabox.parsers.customer_detail import parse_customer_detail
-from apps.integracoes.dinabox.schemas.api import (
-    DinaboxCustomerDetail,
-    DinaboxCustomerListResponse,
-    DinaboxGroupDetail,
-    DinaboxGroupListResponse,
-    DinaboxLabelListResponse,
-    DinaboxMaterialListResponse,
-    DinaboxProjectDetail,
-    DinaboxProjectListResponse,
-)
+try:
+    from apps.integracoes.dinabox.schemas.api import (
+        DinaboxCustomerDetail,
+        DinaboxCustomerListResponse,
+        DinaboxGroupDetail,
+        DinaboxGroupListResponse,
+        DinaboxLabelListResponse,
+        DinaboxMaterialListResponse,
+        DinaboxProjectDetail,
+        DinaboxProjectListResponse,
+    )
+except (ImportError, ModuleNotFoundError):
+    # Travando erros de importação para manter o app rodável sem a API completa
+    DinaboxCustomerDetail = None
+    DinaboxCustomerListResponse = None
+    DinaboxGroupDetail = None
+    DinaboxGroupListResponse = None
+    DinaboxLabelListResponse = None
+    DinaboxMaterialListResponse = None
+    DinaboxProjectDetail = None
+    DinaboxProjectListResponse = None
 
 
 DINABOX_CAPABILITIES = [
