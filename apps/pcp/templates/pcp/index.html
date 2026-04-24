@@ -139,8 +139,12 @@
 {% if pode_gerenciar_pcp %}
 <!-- Tabs -->
 <div class="flex border-b border-gray-200 mb-8">
-    <button onclick="showTab(1)" id="tab-1"
+    <button onclick="showTab(0)" id="tab-0"
             class="tab-button px-8 py-4 font-bold text-sm border-b-2 border-orange-500 text-orange-500 display uppercase tracking-wider">
+        <i class="fas fa-file-upload mr-2"></i> Upload de Arquivo
+    </button>
+    <button onclick="showTab(1)" id="tab-1"
+            class="tab-button px-8 py-4 font-bold text-sm text-gray-500 hover:text-gray-300 display uppercase tracking-wider">
         <i class="fas fa-cloud-download-alt mr-2"></i> Importação Dinabox
     </button>
     <button onclick="showTab(2)" id="tab-2"
@@ -153,10 +157,40 @@
     </a>
 </div>
 
-<!-- TAB 0 REMOVIDA (LEGACY) -->
+<!-- TAB 0: UPLOAD DE ARQUIVO (EMERGÊNCIA) -->
+<div id="tab-content-0" class="tab-content">
+    <div class="card p-8">
+        <div id="drop-area" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-800 rounded-2xl p-12 bg-gray-900/30 mb-8 cursor-pointer">
+            <input type="file" id="file-input" class="hidden" accept=".csv,.xlsx,.xls">
+            <div class="text-orange-500 text-5xl mb-4">
+                <i class="fas fa-file-csv"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-100 mb-2" id="file-name">Arraste o arquivo aqui</h3>
+            <p class="text-gray-500 text-sm">ou clique para selecionar (CSV, XLS, XLSX)</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 mono">
+                    Número do Lote <span class="text-orange-500">*</span>
+                </label>
+                <input type="number" id="input-lote-file" min="1" placeholder="Ex: 305"
+                       class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-xl font-bold text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                       oninput="verificarPronto()">
+            </div>
+            <button id="btn-processar-file"
+                    onclick="processarArquivo('file')"
+                    disabled
+                    class="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-800 disabled:text-gray-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all display uppercase tracking-widest">
+                <i class="fas fa-rocket"></i>
+                Processar e Gerar XLS
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- TAB 1: IMPORTAÇÃO API (NOVO) -->
-<div id="tab-content-1" class="tab-content">
+<div id="tab-content-1" class="tab-content hidden">
     <div class="card p-8">
         <div class="flex flex-col items-center justify-center border-2 border-gray-800 rounded-2xl p-12 bg-gray-900/30 mb-8">
             <div class="w-full max-w-md">
@@ -401,12 +435,22 @@
     function showTab(tabIndex) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
         document.getElementById(`tab-content-${tabIndex}`).classList.remove('hidden');
-        document.querySelectorAll('.tab-button').forEach((btn, i) => {
-            btn.classList.toggle('border-orange-500', i === tabIndex);
-            btn.classList.toggle('text-orange-500', i === tabIndex);
-            btn.classList.toggle('text-gray-500', i !== tabIndex);
-            btn.classList.toggle('tab-button-active', i === tabIndex);
+        
+        // Atualiza botões das abas
+        const tabs = [0, 1, 2];
+        tabs.forEach(idx => {
+            const btn = document.getElementById(`tab-${idx}`);
+            if (!btn) return;
+            
+            if (idx === tabIndex) {
+                btn.classList.add('border-orange-500', 'text-orange-500', 'tab-button-active');
+                btn.classList.remove('text-gray-500');
+            } else {
+                btn.classList.remove('border-orange-500', 'text-orange-500', 'tab-button-active');
+                btn.classList.add('text-gray-500');
+            }
         });
+        
         if (tabIndex === 2) carregarHistorico();
     }
 
@@ -434,30 +478,46 @@
     }
 
     function verificarPronto() {
+        // API
         const inputLoteApi = document.getElementById('input-lote-api');
         const inputProjectId = document.getElementById('input-project-id');
         const btnProcessarApi = document.getElementById('btn-processar-api');
+        if (inputLoteApi && inputProjectId && btnProcessarApi) {
+            const loteApi = inputLoteApi.value && parseInt(inputLoteApi.value) > 0;
+            const projectId = inputProjectId.value.trim();
+            btnProcessarApi.disabled = !(projectId && loteApi);
+        }
 
-        if (!inputLoteApi || !inputProjectId || !btnProcessarApi) return;
-
-        const loteApi = inputLoteApi.value && parseInt(inputLoteApi.value) > 0;
-        const projectId = inputProjectId.value.trim();
-
-        btnProcessarApi.disabled = !(projectId && loteApi);
+        // File
+        const inputLoteFile = document.getElementById('input-lote-file');
+        const btnProcessarFile = document.getElementById('btn-processar-file');
+        if (inputLoteFile && btnProcessarFile) {
+            const loteFile = inputLoteFile.value && parseInt(inputLoteFile.value) > 0;
+            btnProcessarFile.disabled = !(arquivoAtual && loteFile);
+        }
     }
 
     // Processar
     async function processarArquivo(modo) {
-        const lote = document.getElementById('input-lote-api').value;
-        const projectId = document.getElementById('input-project-id').value.trim();
-        
-        if (!projectId || !lote) return;
-
         const formData = new FormData();
-        formData.append('project_id', projectId);
-        formData.append('lote', lote);
+        let btn;
 
-        const btn = document.getElementById('btn-processar-api');
+        if (modo === 'api') {
+            const lote = document.getElementById('input-lote-api').value;
+            const projectId = document.getElementById('input-project-id').value.trim();
+            if (!projectId || !lote) return;
+            formData.append('project_id', projectId);
+            formData.append('lote', lote);
+            btn = document.getElementById('btn-processar-api');
+        } else {
+            const lote = document.getElementById('input-lote-file').value;
+            if (!arquivoAtual || !lote) return;
+            formData.append('arquivo', arquivoAtual);
+            formData.append('lote', lote);
+            btn = document.getElementById('btn-processar-file');
+        }
+
+        btn.disabled = true;
         btn.disabled = true;
         document.getElementById('progress-wrap').classList.remove('hidden');
         document.getElementById('alert-err').classList.add('hidden');

@@ -110,52 +110,75 @@ def pcp_index(request):
 @login_required
 @require_POST
 def pcp_processar(request):
-    """View principal do PCP - Pipeline v2."""
+    """View principal do PCP - Suporta Pipeline v2 (API) e v1 (CSV/Excel)."""
     project_id = request.POST.get("project_id", "").strip()
     lote_str = request.POST.get("lote", "").strip()
+    arquivo = request.FILES.get("arquivo")
     
-    if not project_id or not (lote_str and lote_str.isdigit()):
-        return JsonResponse({"erro": "project_id e lote são obrigatórios"}, status=400)
+    if not (lote_str and lote_str.isdigit()):
+        return JsonResponse({"erro": "O número do lote é obrigatório"}, status=400)
+
+    lote_int = int(lote_str)
 
     try:
-        service = ProcessadorRoteiroService()
-        resultado = service.processar_projeto_dinabox(
-            project_id=project_id,
-            numero_lote=int(lote_str),
-            usuario=request.user
-        )
-        # Preparar prévia para o frontend (primeiras 50 peças)
-        previa = []
-        for p in resultado.pecas_finais[:50]:
-            previa.append({
-                "LOTE": p.get("lote_saida", ""),
-                "DESCRICAO_DA_PECA": p.get("descricao", ""),
-                "LOCAL": p.get("modulo_nome", ""),
-                "OBSERVACAO": p.get("observacoes_original", ""),
-                "PLANO": p.get("plano_corte", ""),
-                "ROTEIRO": p.get("roteiro", ""),
+        # MODO 1: Upload de Arquivo (CSV/Excel) - Prioritário para emergência
+        if arquivo:
+            from apps.pcp.services.processamento_service import ProcessamentoPCPService
+            resultado = ProcessamentoPCPService.processar_arquivo(
+                uploaded_file=arquivo,
+                lote=lote_int,
+                usuario=request.user
+            )
+            # O service de CSV já retorna o formato esperado pelo frontend
+            return JsonResponse({
+                "sucesso": True,
+                **resultado
             })
 
-        # Resumo por roteiro
-        roteiro_counts = {}
-        for p in resultado.pecas_finais:
-            rot = p.get("roteiro", "NENHUM")
-            roteiro_counts[rot] = roteiro_counts.get(rot, 0) + 1
-        
-        resumo_roteiro = [{"roteiro": k, "qtd": v} for k, v in roteiro_counts.items()]
+        # MODO 2: Importação via API
+        if project_id:
+            service = ProcessadorRoteiroService()
+            resultado = service.processar_projeto_dinabox(
+                project_id=project_id,
+                numero_lote=lote_int,
+                usuario=request.user
+            )
+            # Preparar prévia para o frontend (primeiras 50 peças)
+            previa = []
+            for p in resultado.pecas_finais[:50]:
+                previa.append({
+                    "LOTE": p.get("lote_saida", ""),
+                    "DESCRICAO_DA_PECA": p.get("descricao", ""),
+                    "LOCAL": p.get("modulo_nome", ""),
+                    "OBSERVACAO": p.get("observacoes_original", ""),
+                    "PLANO": p.get("plano_corte", ""),
+                    "ROTEIRO": p.get("roteiro", ""),
+                })
 
-        return JsonResponse({
-            "sucesso": True,
-            "pid": resultado.processamento_id,
-            "lote": int(lote_str),
-            "total": len(resultado.pecas_finais),
-            "resumo_processamento": resultado.resumo.model_dump(),
-            "nome_saida": resultado.arquivo_xls,
-            "auditoria_count": len(resultado.auditoria or []),
-            "previa": previa,
-            "resumo": resumo_roteiro,
-        })
+            # Resumo por roteiro
+            roteiro_counts = {}
+            for p in resultado.pecas_finais:
+                rot = p.get("roteiro", "NENHUM")
+                roteiro_counts[rot] = roteiro_counts.get(rot, 0) + 1
+            
+            resumo_roteiro = [{"roteiro": k, "qtd": v} for k, v in roteiro_counts.items()]
+
+            return JsonResponse({
+                "sucesso": True,
+                "pid": resultado.processamento_id,
+                "lote": lote_int,
+                "total": len(resultado.pecas_finais),
+                "resumo_processamento": resultado.resumo.model_dump() if hasattr(resultado.resumo, "model_dump") else {},
+                "nome_saida": resultado.arquivo_xls,
+                "auditoria_count": len(resultado.auditoria or []),
+                "previa": previa,
+                "resumo": resumo_roteiro,
+            })
+
+        return JsonResponse({"erro": "Informe o ID do projeto ou envie um arquivo"}, status=400)
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return JsonResponse({"erro": str(e)}, status=500)
 
 # ---------------------------------------------------------------------------
