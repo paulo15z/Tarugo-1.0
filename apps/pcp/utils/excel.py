@@ -4,17 +4,20 @@ Recebe List[PecaOperacional] e gera arquivo compatível com a operação atual.
 """
 from io import BytesIO
 import pandas as pd
-from typing import List
+from typing import List, Union
 from apps.pcp.schemas.peca import PecaOperacional
 
-def gerar_xls_roteiro(pecas: List[PecaOperacional]) -> bytes:
+def gerar_xls_roteiro(pecas: Union[List[PecaOperacional], pd.DataFrame]) -> bytes:
     """
-    Converte lista de PecaOperacional → Excel no formato esperado pelo cutplanning.
+    Converte lista de PecaOperacional ou DataFrame → Excel no formato esperado pelo cutplanning.
     Mantém compatibilidade com colunas antigas e usa vírgula como separador decimal.
     """
-    rows = []
-    for p in pecas:
-        row = {
+    if isinstance(pecas, pd.DataFrame):
+        df = pecas.copy()
+    else:
+        rows = []
+        for p in pecas:
+            row = {
             "LOTE": p.lote_saida or "",
             "ID DA PEÇA": p.id_dinabox,
             "REFERÊNCIA DA PEÇA": p.ref_completa,
@@ -31,14 +34,15 @@ def gerar_xls_roteiro(pecas: List[PecaOperacional]) -> bytes:
             "BORDA_FACE_LE": p.bordas.get("left").nome if p.bordas and p.bordas.get("left") else "",
             "BORDA_FACE_LD": p.bordas.get("right").nome if p.bordas and p.bordas.get("right") else "",
             "FURO": "SIM" if p.tem_furacoes() else "",
+            "FURO A": p.furacoes.get("A") or "",
+            "FURO B": p.furacoes.get("B") or "",
             "UREF": p.uref or "",
             "PLANO": p.plano_corte or "11",
             "ROTEIRO": p.roteiro or "COR",
             "CONTEXTO": p.contexto or "",
         }
         rows.append(row)
-
-    df = pd.DataFrame(rows)
+        df = pd.DataFrame(rows)
     
     # Ordenação recomendada para a fábrica
     colunas_ordem = [
@@ -46,7 +50,7 @@ def gerar_xls_roteiro(pecas: List[PecaOperacional]) -> bytes:
         "MATERIAL DA PEÇA", "CÓDIGO DO MATERIAL", "ESPESSURA",
         "LARGURA DA PEÇA", "ALTURA DA PEÇA", "QUANTIDADE",
         "BORDA_FACE_FRENTE", "BORDA_FACE_TRASEIRA", "BORDA_FACE_LE", "BORDA_FACE_LD",
-        "FURO", "UREF", "PLANO", "ROTEIRO", "CONTEXTO"
+        "FURO", "FURO A", "FURO B", "UREF", "PLANO", "ROTEIRO", "CONTEXTO"
     ]
     
     df = df.reindex(columns=[c for c in colunas_ordem if c in df.columns])

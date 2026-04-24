@@ -31,6 +31,8 @@ EXPECTED_DINABOX_COLUMNS = [
     "FURO",
     "OBS",
     "REFERENCIA",
+    "FURO A",
+    "FURO B",
 ]
 
 COLUMN_ALIASES = {

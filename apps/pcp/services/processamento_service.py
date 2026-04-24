@@ -61,7 +61,26 @@ class ProcessamentoPCPService:
         # 3. Gerar coluna R
         df = ProcessamentoPCPService.gerar_coluna_lote(df, lote=input_data.lote)
 
-        # 4. Limpeza
+        # 4. Processar colunas de Furo
+        for col in ['FURO A', 'FURO B']:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.replace('nan', '').str.strip()
+
+        # 5. Reordenar colunas para o XLS de saída
+        colunas_ordem = [
+            "LOTE", "ID DA PEÇA", "REFERÊNCIA DA PEÇA", "DESCRIÇÃO DA PEÇA", "LOCAL",
+            "MATERIAL DA PEÇA", "CÓDIGO DO MATERIAL", "ESPESSURA",
+            "LARGURA DA PEÇA", "ALTURA DA PEÇA", "QUANTIDADE",
+            "BORDA_FACE_FRENTE", "BORDA_FACE_TRASEIRA", "BORDA_FACE_LE", "BORDA_FACE_LD",
+            "FURO", "FURO A", "FURO B", "UREF", "PLANO", "ROTEIRO", "CONTEXTO", "OBSERVAÇÃO"
+        ]
+        # Mantém apenas as colunas que existem no DF e na ordem desejada
+        colunas_existentes = [c for c in colunas_ordem if c in df.columns]
+        # Adiciona quaisquer outras colunas que não estavam na lista mas existem no DF
+        outras_colunas = [c for c in df.columns if c not in colunas_existentes]
+        df = df[colunas_existentes + outras_colunas]
+
+        # 6. Limpeza
         for col in ['LARGURA_NUM', 'QTD_NUM']:
             if col in df.columns:
                 df = df.drop(columns=[col], errors='ignore')
@@ -81,11 +100,11 @@ class ProcessamentoPCPService:
             if mask.any():
                 df.loc[mask, 'OBSERVAÇÃO'] = df.loc[mask, 'OBSERVAÇÃO'].fillna('') + ' _dup_ '
 
-        # 5. Gerar XLS
+        # 7. Gerar XLS
         xls_buf = gerar_xls_roteiro(df)
         xls_bytes = xls_buf.getvalue()
 
-        # 6. Salvar
+        # 8. Salvar
         pid = str(uuid.uuid4())[:8]
         nome_saida = f"{pid}_Lote-{lote}_{uploaded_file.name.rsplit('.', 1)[0]}.xls"
 
