@@ -246,7 +246,7 @@ def calcular_roteiro(row) -> str:
     ).strip().lower()
 
     tem_borda = any(str(_row_get(row, c)).strip() not in ('', 'nan') for c in BORDA_COLS)
-    tem_furo = furo in ('sim', 'true', '1')
+    tem_furo = furo in ('sim', 'true', '1', 'a', 'b', 'ab')
     tem_duplagem = duplagem in ('sim', 'true', '1')
     
     tem_puxador = 'puxador' in desc or 'tampa' in desc
