@@ -11,14 +11,13 @@ class LotePCPService:
         """
         try:
             peca = PecaPCP.objects.get(id=peca_id)
-            peca.quantidade_bipada += quantidade
+            peca.quantidade_produzida += quantidade
             
             # Se atingiu ou passou a meta, marca como concluída
-            if peca.quantidade_bipada >= peca.quantidade_planejada:
-                peca.status = 'concluido'
-                peca.data_bipagem = timezone.now()
+            if peca.quantidade_produzida >= peca.quantidade_planejada:
+                peca.status = 'finalizado'
             else:
-                peca.status = 'processando'
+                peca.status = 'em_producao'
                 
             peca.save()
             return peca

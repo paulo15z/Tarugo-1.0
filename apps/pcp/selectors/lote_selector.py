@@ -11,7 +11,7 @@ def list_lotes_pendentes():
     return (
         LotePCP.objects
         .filter(status='pendente')
-        .order_by('-data_processamento')
+        .order_by('-criado_em')
         .prefetch_related('ambientes__modulos')
     )
 

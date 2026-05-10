@@ -1,10 +1,4 @@
-"""
-SCHEMA OPERACIONAL - Dinabox para Bipagem, Fabricação e Rastreabilidade
-
-Responsável por: Fabricação, furação, processos de fábrica, rastreabilidade
-Roteamento: apps/bipagem/
-"""
-
+# apps/integracoes/dinabox/schemas/dinabox_operacional.py
 from datetime import datetime
 from typing import List, Optional, Any
 from pydantic import Field, field_validator, model_validator
@@ -323,22 +317,3 @@ class DinaboxProjectOperacional(DinaboxBaseModel):
     def total_edges_to_band(self) -> int:
         """Total de rebordos em todo o projeto"""
         return sum(m.total_edges_to_band for m in self.woodwork)
-    
-    def get_manufacturing_summary(self) -> dict:
-        """Retorna resumo de operações para planning de fábrica"""
-        return {
-            "project_id": self.project_id,
-            "total_modules": self.total_modules,
-            "total_parts": self.total_parts,
-            "total_holes": self.total_holes,
-            "total_edges_to_band": self.total_edges_to_band,
-            "modules": [
-                {
-                    "name": m.name,
-                    "parts": m.total_parts,
-                    "holes": m.total_holes,
-                    "edges": m.total_edges_to_band
-                }
-                for m in self.woodwork
-            ]
-        }

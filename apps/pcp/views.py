@@ -121,21 +121,7 @@ def pcp_processar(request):
     lote_int = int(lote_str)
 
     try:
-        # MODO 1: Upload de Arquivo (CSV/Excel) - Prioritário para emergência
-        if arquivo:
-            from apps.pcp.services.processamento_service import ProcessamentoPCPService
-            resultado = ProcessamentoPCPService.processar_arquivo(
-                uploaded_file=arquivo,
-                lote=lote_int,
-                usuario=request.user
-            )
-            # O service de CSV já retorna o formato esperado pelo frontend
-            return JsonResponse({
-                "sucesso": True,
-                **resultado
-            })
-
-        # MODO 2: Importação via API
+        # MODO 1: Importação via API (Prioritário)
         if project_id:
             service = ProcessadorRoteiroService()
             resultado = service.processar_projeto_dinabox(
@@ -175,7 +161,7 @@ def pcp_processar(request):
                 "resumo": resumo_roteiro,
             })
 
-        return JsonResponse({"erro": "Informe o ID do projeto ou envie um arquivo"}, status=400)
+        return JsonResponse({"erro": "Informe o ID do projeto para importação via API"}, status=400)
     except Exception as e:
         import traceback
         print(traceback.format_exc())

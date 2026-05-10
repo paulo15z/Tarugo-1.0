@@ -78,7 +78,7 @@ def list_pecas_lote_operacional(pid: str, **filters) -> list[dict]:
             "id": p.id,
             "descricao": p.descricao,
             "quantidade": p.quantidade_planejada,
-            "bipada": p.quantidade_bipada,
+            "bipada": p.quantidade_produzida,
             "status": p.status
         })
     return pecas
@@ -88,12 +88,11 @@ def registrar_bipagem_peca(pid: str, codigo_peca: str, quantidade: int, usuario:
     """Registra a bipagem de uma peça no lote."""
     try:
         peca = PecaPCP.objects.get(modulo__ambiente__lote__pid=pid, codigo_peca=codigo_peca)
-        peca.quantidade_bipada += quantidade
-        if peca.quantidade_bipada >= peca.quantidade_planejada:
-            peca.status = 'concluido'
-            peca.data_bipagem = timezone.now()
+        peca.quantidade_produzida += quantidade
+        if peca.quantidade_produzida >= peca.quantidade_planejada:
+            peca.status = 'finalizado'
         else:
-            peca.status = 'processando'
+            peca.status = 'em_producao'
         peca.save()
         return {"sucesso": True, "mensagem": "Bipagem registrada"}
     except PecaPCP.DoesNotExist:
@@ -104,9 +103,8 @@ def estornar_bipagem_peca(pid: str, codigo_peca: str, usuario: str = '', motivo:
     """Estorna a bipagem de uma peça."""
     try:
         peca = PecaPCP.objects.get(modulo__ambiente__lote__pid=pid, codigo_peca=codigo_peca)
-        peca.quantidade_bipada = 0
+        peca.quantidade_produzida = 0
         peca.status = 'pendente'
-        peca.data_bipagem = None
         peca.save()
         return {"sucesso": True, "mensagem": "Bipagem estornada"}
     except PecaPCP.DoesNotExist:

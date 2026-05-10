@@ -1,10 +1,4 @@
-"""
-SCHEMA LOGÍSTICO - Dinabox para Expedição, Viagens e Entregas
-
-Responsável por: Customer info, endereços, expedição, viagens, tracking
-Roteamento: apps/logistica/, apps/bipagem/ (para viagens)
-"""
-
+# apps/integracoes/dinabox/schemas/dinabox_logistico.py
 from datetime import datetime
 from typing import List, Optional
 from pydantic import Field, model_validator
@@ -111,30 +105,3 @@ class DinaboxProjectLogistico(DinaboxBaseModel):
     def total_items(self) -> int:
         """Total de itens para conferência de expedição"""
         return sum(h.qt for h in self.holes_summary)
-    
-    def get_shipment_summary(self) -> dict:
-        """Retorna resumo para criação de viagem/expedição"""
-        return {
-            "project_id": self.project_id,
-            "project_description": self.project_description,
-            "customer": {
-                "id": self.customer.customer_id,
-                "name": self.customer.customer_name,
-                "address": self.customer.customer_address,
-            },
-            "content": {
-                "total_modules": self.total_modules,
-                "total_items": self.total_items,
-                "estimated_volume_m3": self.total_volume_m3,
-            },
-            "items_detail": [
-                {
-                    "id": h.id,
-                    "name": h.name,
-                    "quantity": h.qt,
-                    "dimensions": h.dimensions,
-                    "weight_kg": h.weight,
-                }
-                for h in self.holes_summary
-            ]
-        }

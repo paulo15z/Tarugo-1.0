@@ -1,10 +1,4 @@
-"""
-SCHEMA ADMINISTRATIVO - Dinabox para PCP, Financeiro, Compras, Estoque
-
-Responsável por: Gerenciar BOM, custos, alocação de material, ordens de compra
-Roteamento: apps/pcp/, apps/estoque/, apps/finanzeiro/
-"""
-
+# apps/integracoes/dinabox/schemas/dinabox_administrativo.py
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import Field, field_validator, model_validator
@@ -187,40 +181,3 @@ class DinaboxProjectAdministrativo(DinaboxBaseModel):
     @property
     def total_inputs(self) -> int:
         return sum(len(m.inputs) for m in self.woodwork)
-    
-    def get_bom_summary(self) -> Dict[str, Any]:
-        """Retorna resumo de BOM para relatórios"""
-        materials = {}
-        hardware = {}
-        
-        for module in self.woodwork:
-            for part in module.parts:
-                key = f"{part.material.id}_{part.width}x{part.height}x{part.thickness}"
-                if key not in materials:
-                    materials[key] = {
-                        "material": part.material.name,
-                        "dimensions": f"{part.width}x{part.height}x{part.thickness}mm",
-                        "quantity": 0,
-                        "cost": 0.0
-                    }
-                materials[key]["quantity"] += part.count
-                materials[key]["cost"] += part.factory_price * part.count
-            
-            for item in module.inputs:
-                key = f"{item.id}_{item.category_name}"
-                if key not in hardware:
-                    hardware[key] = {
-                        "item": item.name,
-                        "category": item.category_name,
-                        "quantity": 0,
-                        "unit": item.unit,
-                        "cost": 0.0
-                    }
-                hardware[key]["quantity"] += item.qt
-                hardware[key]["cost"] += item.factory_price * item.qt
-        
-        return {
-            "materials": materials,
-            "hardware": hardware,
-            "total_cost": self.total_materials_cost
-        }
