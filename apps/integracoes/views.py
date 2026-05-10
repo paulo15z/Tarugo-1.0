@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from types import SimpleNamespace
@@ -48,6 +48,32 @@ def _token_disparo_projetos_valido(request: HttpRequest) -> bool:
 
 def _obter_servico_dinabox() -> DinaboxApiService:
     return DinaboxApiService()
+
+
+def _fallback_url() -> str:
+    return "pcp:index"
+
+
+@login_required
+def integracoes_index(request: HttpRequest):
+    if not _user_pode_testar_integracoes(request.user):
+        messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar integracoes.")
+        return redirect(_fallback_url())
+
+    return render(
+        request,
+        "integracoes/index.html",
+        {
+            "provedores": [
+                {
+                    "nome": "Dinabox",
+                    "descricao": "Consulta e ingestao de projetos, clientes, materiais e etiquetas.",
+                    "status": "ativo",
+                    "url": "integracoes:dinabox-conectar",
+                }
+            ]
+        },
+    )
 
 
 def _coerce_page(raw_value) -> int:
@@ -166,7 +192,7 @@ def _extract_customer_form_initial(customer: dict) -> dict:
 def dinabox_conectar(request: HttpRequest):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     force_refresh = request.method == "POST"
     service = _obter_servico_dinabox()
@@ -245,7 +271,7 @@ def dinabox_test_auth(request):
 def dinabox_capacidades(request: HttpRequest):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
     capabilities: list[dict] = []
@@ -270,7 +296,7 @@ def dinabox_capacidades(request: HttpRequest):
 def dinabox_projetos_list(request: HttpRequest):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
 
@@ -302,7 +328,7 @@ def dinabox_projetos_list(request: HttpRequest):
 def dinabox_projeto_detail(request: HttpRequest, project_id: str):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
 
@@ -322,7 +348,7 @@ def dinabox_projeto_detail(request: HttpRequest, project_id: str):
 def dinabox_lotes_list(request: HttpRequest):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
 
@@ -352,7 +378,7 @@ def dinabox_lotes_list(request: HttpRequest):
 def dinabox_lote_detail(request: HttpRequest, group_id: str):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
 
@@ -372,7 +398,7 @@ def dinabox_lote_detail(request: HttpRequest, group_id: str):
 def dinabox_clientes_list(request: HttpRequest):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
     page = _coerce_page(request.GET.get("p", "1"))
@@ -515,7 +541,7 @@ def dinabox_cliente_excluir(request: HttpRequest, customer_id: str):
 def dinabox_materiais_list(request: HttpRequest):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
     page = _coerce_page(request.GET.get("p", "1"))
@@ -545,7 +571,7 @@ def dinabox_materiais_list(request: HttpRequest):
 def dinabox_etiquetas_list(request: HttpRequest):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
     page = _coerce_page(request.GET.get("p", "1"))
@@ -631,7 +657,7 @@ def dinabox_projeto_modulos_pecas(request: HttpRequest, project_id: str):
     """
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a integracao Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     service = _obter_servico_dinabox()
 
@@ -676,7 +702,7 @@ def dinabox_projeto_modulos_pecas(request: HttpRequest, project_id: str):
 def dinabox_importacoes_list(request: HttpRequest):
     if not _user_pode_testar_integracoes(request.user):
         messages.error(request, "Somente PCP, TI, Gestao ou admin podem acessar a fila Dinabox.")
-        return redirect("estoque:lista_produtos")
+        return redirect(_fallback_url())
 
     status = str(request.GET.get("status", "")).strip().upper()
     search = str(request.GET.get("q", "")).strip()

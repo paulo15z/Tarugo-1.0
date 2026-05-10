@@ -1,6 +1,6 @@
 from decimal import Decimal
 from datetime import datetime
-from typing import Optional, Set, Dict, Literal
+from typing import Any, Optional, Set, Dict, Literal
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
@@ -40,6 +40,10 @@ class PecaOperacional(BaseModel): # model tipado para o resto da operação
     modulo_ref: str
     modulo_nome: str
     contexto: Optional[str] = None
+    nome_do_cliente: Optional[str] = None
+    id_do_projeto: Optional[str] = None
+    nome_do_projeto: Optional[str] = None
+    descricao_modulo: Optional[str] = None
 
     # GEOMETRIA
     quantidade: int = Field(..., gt=0)
@@ -71,6 +75,7 @@ class PecaOperacional(BaseModel): # model tipado para o resto da operação
     # AUDITORIA
     data_criacao: datetime = Field(default_factory=datetime.now)
     id_auditoria: Optional[str] = None
+    atributos_tecnicos: Dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(from_attributes=True, extra="allow")
 

@@ -8,34 +8,15 @@ from django.contrib.auth.models import Group, User
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from apps.comercial.models import AmbienteOrcamento, ClienteComercial, StatusClienteComercial
 from apps.integracoes.models import (
-    DinaboxClienteIndex,
     DinaboxImportacaoProjeto,
     StatusImportacaoProjeto,
 )
 from apps.integracoes.services_importacao import DinaboxImportacaoProjetoService
-from apps.pedidos.domain.status import AmbienteStatus, PedidoStatus
-from apps.pedidos.services import PedidoService
 
 
 class DinaboxImportacaoProjetoServiceTests(TestCase):
     def setUp(self):
-        self.cliente = ClienteComercial.objects.create(
-            customer_id="2539544",
-            numero_pedido="573",
-            status=StatusClienteComercial.CONTRATO_FECHADO,
-        )
-        DinaboxClienteIndex.objects.create(
-            customer_id="2539544",
-            customer_name="1067 - THIAGO E GABY",
-            customer_type="pf",
-            customer_status="on",
-        )
-        AmbienteOrcamento.objects.create(cliente=self.cliente, nome_ambiente="COZINHA", ordem=0)
-        AmbienteOrcamento.objects.create(cliente=self.cliente, nome_ambiente="SALA", ordem=1)
-        self.pedido = PedidoService.criar_pedido_do_comercial(self.cliente, "573")
-
         self.payload = {
             "project_id": "0310366465",
             "project_status": "production",
@@ -72,21 +53,13 @@ class DinaboxImportacaoProjetoServiceTests(TestCase):
         self.assertEqual(item.status, StatusImportacaoProjeto.PENDENTE)
         self.assertEqual(item.project_description, "COZINHA")
 
-    def test_integra_payload_ao_pedido(self):
-        resultado = DinaboxImportacaoProjetoService.integrar_payload_ao_pedido(self.payload)
+    def test_monta_resumo_sem_depender_de_pedidos(self):
+        resultado = DinaboxImportacaoProjetoService._montar_resumo(self.payload)
 
-        cozinha = self.pedido.ambientes.get(nome_ambiente="COZINHA")
-        sala = self.pedido.ambientes.get(nome_ambiente="SALA")
-        self.pedido.refresh_from_db()
-        cozinha.refresh_from_db()
-        sala.refresh_from_db()
-
-        self.assertEqual(resultado["pedido_numero"], "573")
-        self.assertEqual(cozinha.status, AmbienteStatus.AGUARDANDO_PCP)
-        self.assertEqual(sala.status, AmbienteStatus.PENDENTE_PROJETOS)
-        self.assertEqual(self.pedido.status, PedidoStatus.ENVIADO_PARA_PROJETOS)
-        self.assertEqual(cozinha.dados_engenharia["metadata"]["project_id"], "0310366465")
-        self.assertIn("raw_payload", cozinha.dados_engenharia)
+        self.assertEqual(resultado["provider"], "dinabox")
+        self.assertEqual(resultado["project_id"], "0310366465")
+        self.assertEqual(resultado["project_customer_id"], "2539544")
+        self.assertEqual(resultado["project_description"], "COZINHA")
 
     def test_processa_item_com_fetch_mockado(self):
         item = DinaboxImportacaoProjetoService.enfileirar_importacao(
@@ -107,7 +80,8 @@ class DinaboxImportacaoProjetoServiceTests(TestCase):
 
         item.refresh_from_db()
         self.assertEqual(item.status, StatusImportacaoProjeto.CONCLUIDO)
-        self.assertEqual(resultado["ambiente_nome"], "COZINHA")
+        self.assertEqual(resultado["project_description"], "COZINHA")
+        self.assertEqual(item.payload_bruto["project_id"], "0310366465")
 
     def test_processa_fila_async(self):
         DinaboxImportacaoProjetoService.enfileirar_importacao(
@@ -195,6 +169,23 @@ class DinaboxEnfileirarProjetoConcluidoViewTests(TestCase):
         self.assertEqual(DinaboxImportacaoProjeto.objects.count(), 1)
 
 
+class IntegracoesIndexViewTests(TestCase):
+    def setUp(self):
+        self.url = reverse("integracoes:index")
+        group, _ = Group.objects.get_or_create(name="TI")
+        self.user = User.objects.create_user(username="integracoes-user", password="123")
+        self.user.groups.add(group)
+
+    def test_lista_provedores_para_usuario_autorizado(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Integracoes")
+        self.assertContains(response, "Dinabox")
+        self.assertContains(response, "Conectores externos")
+
+
 class DinaboxImportacoesListViewTests(TestCase):
     def setUp(self):
         self.url = reverse("integracoes:dinabox-importacoes-list")
@@ -221,7 +212,7 @@ class DinaboxImportacoesListViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Fila de Importacoes Dinabox")
+        self.assertContains(response, "Fila de Importacoes")
         self.assertContains(response, "0310366465")
         self.assertContains(response, "0310366466")
 

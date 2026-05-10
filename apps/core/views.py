@@ -26,16 +26,6 @@ def _apps_disponiveis(user) -> list[dict[str, str]]:
     is_admin = bool(user.is_superuser or user.is_staff)
 
     apps: list[dict[str, str]] = []
-    if is_admin or _has_any_group(user, {"gestao", "pcp", "estoque", "ti"}):
-        apps.append(
-            {
-                "nome": "Estoque",
-                "descricao": "Produtos, reservas e movimentacoes.",
-                "url": reverse("estoque:lista_produtos"),
-                "setor": "Almoxarifado",
-            }
-        )
-
     if is_admin or _has_any_group(user, {"gestao", "pcp", "ti"}):
         apps.append(
             {
@@ -46,22 +36,12 @@ def _apps_disponiveis(user) -> list[dict[str, str]]:
             }
         )
 
-    if is_admin or _has_any_group(user, {"gestao", "pcp", "operador", "ti"}):
-        apps.append(
-            {
-                "nome": "Bipagem",
-                "descricao": "Operacao de leitura e andamento de pecas.",
-                "url": reverse("bipagem:index"),
-                "setor": "Producao",
-            }
-        )
-
     if is_admin or _has_any_group(user, {"gestao", "pcp", "ti"}):
         apps.append(
             {
-                "nome": "Dinabox",
-                "descricao": "Conexao com API Dinabox para consulta.",
-                "url": reverse("integracoes:dinabox-conectar"),
+                "nome": "Integracoes",
+                "descricao": "Conectores externos para engenharia, clientes e materiais.",
+                "url": reverse("integracoes:index"),
                 "setor": "Integracoes",
             }
         )

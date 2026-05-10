@@ -1,12 +1,12 @@
 ﻿{% extends "base/base.html" %}
 
-{% block title %}Conta Tecnica Dinabox - Tarugo{% endblock %}
+{% block title %}Conector Dinabox - Tarugo{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Integracao Dinabox</h1>
-        <p class="page-subtitle">Conta tecnica unica para o Tarugo (sem login por operador).</p>
+        <h1 class="page-title">Conector Dinabox</h1>
+        <p class="page-subtitle">Provedor externo ativo para dados de engenharia, clientes e materiais.</p>
     </div>
     <div class="user-meta" style="gap: 0.5rem;">
         <a href="{% url 'integracoes:dinabox-clientes-list' %}" class="btn btn-outline">Clientes</a>
@@ -59,8 +59,8 @@
 <div class="card">
     <h3 style="margin-bottom: 0.6rem;">Politica de acesso</h3>
     <p style="color: var(--text-muted); line-height: 1.5;">
-        O Dinabox usa uma conta tecnica unica no backend. Operadores nao digitam login/senha da API.
-        Controle de quem pode usar a integracao continua sendo feito por grupos internos do Tarugo.
+        Este provedor usa uma conta tecnica unica no backend. Operadores nao digitam login/senha da API.
+        Controle de quem pode usar conectores continua sendo feito por grupos internos do Tarugo.
     </p>
 </div>
 {% endblock %}

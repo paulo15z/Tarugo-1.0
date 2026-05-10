@@ -6,62 +6,62 @@ from typing import Any
 from asgiref.sync import sync_to_async
 from django.db import transaction
 from django.utils import timezone
+from pydantic import BaseModel, Field
 
-try:
-    from apps.integracoes.dinabox.schemas import (
-        DinaboxProjectOperacional,
-        DinaboxProjetoConcluidoEventoSchema,
-        DinaboxProjetoPedidoSchema,
-    )
-except (ImportError, ModuleNotFoundError):
-    # Travando erros de importação para manter o app rodável sem a API completa
-    DinaboxProjectOperacional = None
-    DinaboxProjetoConcluidoEventoSchema = None
-    DinaboxProjetoPedidoSchema = None
 from apps.integracoes.models import DinaboxImportacaoProjeto, StatusImportacaoProjeto
 
+try:
+    from apps.integracoes.dinabox.schemas import DinaboxProjectOperacional
+except (ImportError, ModuleNotFoundError):
+    DinaboxProjectOperacional = None
 
-class DinaboxImportacaoProjetoService:
-    """Fila e worker leve para importar detalhes de projetos Dinabox para Pedidos."""
+
+class ProjetoConcluidoEventoSchema(BaseModel):
+    project_id: str = Field(..., min_length=1)
+    project_customer_id: str = ""
+    project_description: str = ""
+    origem: str = "projetos_concluido"
+    prioridade: int = 100
+
+
+class ImportacaoProjetoService:
+    """
+    Fila leve de ingestao de projetos externos.
+
+    A fila nao grava em um dominio de pedidos inexistente. Ela busca o payload
+    no provedor, persiste o bruto e salva um resumo operacional quando o schema
+    do conector atual conseguir validar os dados.
+    """
 
     @staticmethod
-    def _montar_dados_engenharia(raw_data: dict[str, Any]) -> dict[str, Any]:
-        schema = DinaboxProjetoPedidoSchema.model_validate(raw_data)
-        dados = {
-            "metadata": {
-                "source": "dinabox",
-                "project_id": schema.project_id,
-                "project_status": schema.project_status,
-                "project_version": schema.project_version,
-                "project_description": schema.project_description,
-                "project_customer_id": schema.project_customer_id,
-                "project_customer_name": schema.project_customer_name,
-                "project_created": schema.project_created,
-                "project_last_modified": schema.project_last_modified,
-                "project_author_name": schema.project_author_name,
-            },
-            "woodwork": schema.woodwork,
-            "holes_summary": schema.holes,
-            "raw_payload": raw_data,
+    def _montar_resumo(raw_data: dict[str, Any], provider: str = "dinabox") -> dict[str, Any]:
+        resumo: dict[str, Any] = {
+            "provider": provider,
+            "project_id": str(raw_data.get("project_id") or raw_data.get("id") or ""),
+            "project_customer_id": str(raw_data.get("project_customer_id") or raw_data.get("customer_id") or ""),
+            "project_customer_name": str(raw_data.get("project_customer_name") or raw_data.get("customer_name") or ""),
+            "project_description": str(raw_data.get("project_description") or raw_data.get("description") or ""),
+            "raw_keys": sorted(raw_data.keys()),
         }
-        try:
-            operacional = DinaboxProjectOperacional.model_validate(raw_data)
-            dados["operacional_resumo"] = operacional.get_manufacturing_summary()
-            dados["woodwork"] = [item.model_dump() for item in operacional.woodwork]
-            dados["holes_summary"] = [item.model_dump() for item in operacional.holes_summary]
-        except Exception:
-            pass
-        return dados
+
+        if DinaboxProjectOperacional is not None:
+            try:
+                operacional = DinaboxProjectOperacional.model_validate(raw_data)
+                resumo["operacional"] = operacional.get_manufacturing_summary()
+            except Exception as exc:
+                resumo["schema_warning"] = str(exc)
+
+        return resumo
 
     @staticmethod
     @transaction.atomic
     def enfileirar_importacao_por_evento(payload: dict[str, Any]) -> DinaboxImportacaoProjeto:
-        schema = DinaboxProjetoConcluidoEventoSchema.model_validate(payload or {})
-        return DinaboxImportacaoProjetoService.enfileirar_importacao(
+        schema = ProjetoConcluidoEventoSchema.model_validate(payload or {})
+        return ImportacaoProjetoService.enfileirar_importacao(
             project_id=schema.project_id,
             project_customer_id=schema.project_customer_id,
             project_description=schema.project_description,
-            origem=schema.origem or "projetos_concluido",
+            origem=schema.origem,
             prioridade=schema.prioridade,
         )
 
@@ -146,53 +146,6 @@ class DinaboxImportacaoProjetoService:
         item.save(update_fields=["status", "ultimo_erro", "atualizado_em"])
 
     @staticmethod
-    @transaction.atomic
-    def integrar_payload_ao_pedido(raw_data: dict[str, Any]) -> dict[str, Any]:
-        from apps.pedidos.selectors import AmbienteSelector
-        from apps.pedidos.services import PedidoService
-
-        schema = DinaboxProjetoPedidoSchema.model_validate(raw_data)
-        ambiente = AmbienteSelector.get_ambiente_por_cliente_e_nome(
-            customer_id=schema.project_customer_id,
-            nome_ambiente=schema.project_description,
-        )
-        if ambiente is None:
-            raise ValueError(
-                f"Nenhum AmbientePedido encontrado para customer_id={schema.project_customer_id} "
-                f"e descricao={schema.project_description}."
-            )
-
-        ambiente = PedidoService.processar_engenharia_ambiente(
-            ambiente=ambiente,
-            dados_engenharia=DinaboxImportacaoProjetoService._montar_dados_engenharia(raw_data),
-        )
-        return {
-            "pedido_numero": ambiente.pedido.numero_pedido,
-            "ambiente_id": ambiente.pk,
-            "ambiente_nome": ambiente.nome_ambiente,
-            "ambiente_status": ambiente.status,
-            "project_id": schema.project_id,
-            "project_customer_id": schema.project_customer_id,
-            "project_description": schema.project_description,
-        }
-
-    @staticmethod
-    def processar_item(item_id: int) -> dict[str, Any]:
-        from apps.integracoes.dinabox.api_service import DinaboxApiService
-
-        item = DinaboxImportacaoProjetoService._marcar_processando(item_id)
-        try:
-            service = DinaboxApiService()
-            detail = service.get_project_detail(item.project_id)
-            raw_data = detail.model_dump() if hasattr(detail, "model_dump") else dict(detail)
-            resultado = DinaboxImportacaoProjetoService.integrar_payload_ao_pedido(raw_data)
-            DinaboxImportacaoProjetoService._marcar_concluido(item_id, raw_data, resultado)
-            return resultado
-        except Exception as exc:
-            DinaboxImportacaoProjetoService._marcar_erro(item_id, str(exc))
-            raise
-
-    @staticmethod
     def _buscar_payload_remoto(project_id: str) -> dict[str, Any]:
         from apps.integracoes.dinabox.api_service import DinaboxApiService
 
@@ -203,12 +156,18 @@ class DinaboxImportacaoProjetoService:
     @staticmethod
     @transaction.atomic
     def _finalizar_item_com_payload(item_id: int, raw_data: dict[str, Any]) -> dict[str, Any]:
+        resultado = ImportacaoProjetoService._montar_resumo(raw_data)
+        ImportacaoProjetoService._marcar_concluido(item_id, raw_data, resultado)
+        return resultado
+
+    @staticmethod
+    def processar_item(item_id: int) -> dict[str, Any]:
+        item = ImportacaoProjetoService._marcar_processando(item_id)
         try:
-            resultado = DinaboxImportacaoProjetoService.integrar_payload_ao_pedido(raw_data)
-            DinaboxImportacaoProjetoService._marcar_concluido(item_id, raw_data, resultado)
-            return resultado
+            raw_data = ImportacaoProjetoService._buscar_payload_remoto(item.project_id)
+            return ImportacaoProjetoService._finalizar_item_com_payload(item_id, raw_data)
         except Exception as exc:
-            DinaboxImportacaoProjetoService._marcar_erro(item_id, str(exc))
+            ImportacaoProjetoService._marcar_erro(item_id, str(exc))
             raise
 
     @staticmethod
@@ -221,29 +180,32 @@ class DinaboxImportacaoProjetoService:
 
     @staticmethod
     async def processar_fila_async(limit: int = 10, concorrencia: int = 2) -> list[dict[str, Any] | Exception]:
-        itens = await sync_to_async(DinaboxImportacaoProjetoService.listar_itens_pendentes)(limit)
+        itens = await sync_to_async(ImportacaoProjetoService.listar_itens_pendentes)(limit)
         semaforo = asyncio.Semaphore(max(1, concorrencia))
 
         async def _run(item: DinaboxImportacaoProjeto):
             async with semaforo:
                 try:
                     marcado = await sync_to_async(
-                        DinaboxImportacaoProjetoService._marcar_processando,
+                        ImportacaoProjetoService._marcar_processando,
                         thread_sensitive=True,
                     )(item.pk)
                     raw_data = await asyncio.to_thread(
-                        DinaboxImportacaoProjetoService._buscar_payload_remoto,
+                        ImportacaoProjetoService._buscar_payload_remoto,
                         marcado.project_id,
                     )
                     return await sync_to_async(
-                        DinaboxImportacaoProjetoService._finalizar_item_com_payload,
+                        ImportacaoProjetoService._finalizar_item_com_payload,
                         thread_sensitive=True,
                     )(item.pk, raw_data)
                 except Exception as exc:
                     await sync_to_async(
-                        DinaboxImportacaoProjetoService._marcar_erro,
+                        ImportacaoProjetoService._marcar_erro,
                         thread_sensitive=True,
                     )(item.pk, str(exc))
                     return exc
 
         return await asyncio.gather(*[_run(item) for item in itens], return_exceptions=True)
+
+
+DinaboxImportacaoProjetoService = ImportacaoProjetoService

@@ -14,17 +14,12 @@ urlpatterns = [
     path('logout/', core_views.EntradaLogoutView.as_view(), name='logout'),
 
     # Apps
-    path('estoque/', include('apps.estoque.urls')),
-    path('api/estoque/', include('apps.estoque.api.urls')),
     path('pcp/', include('apps.pcp.urls')),
     path('api/pcp/', include('apps.pcp.api.urls')),
 
-    # Bipagem
-    path('bipagem/', include('apps.bipagem.urls')),
-    path('api/bipagem/', include('apps.bipagem.api.urls')),
-
     # Integracoes
     path('integracoes/', include('apps.integracoes.urls')),
+    path('api/integracoes/dinabox/', include('apps.integracoes.dinabox.api.urls')),
 ]
 
 if settings.DEBUG:

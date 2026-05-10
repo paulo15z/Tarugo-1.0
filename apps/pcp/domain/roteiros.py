@@ -66,26 +66,32 @@ class RoteiroCalculator:
                 setores.append(Setor.XBOR)
 
         # 4. Lógica de Marcenaria (MCX, MPE, MAR)
-        # Requisito: MPE deve usar exclusivamente dinabox_entity == 'dinabox_porta'
-        # Requisito: MCX deve usar o campo 'uref' contendo 'MCX'
         
-        uref = (peca.uref or "").upper()
+        # MCX: Montagem de Caixa
+        palavras_caixaria = ["balcao", "balcão", "aereo", "aéreo", "torre", "gaveteiro", "caixa", "base", "prateleira", "divisor", "fundo", "gaveta"]
+        eh_caixaria = any(p in local for p in palavras_caixaria) or any(p in desc for p in palavras_caixaria)
         
-        # MPE: Montagem de Portas e Externos (Regra Estrita)
-        eh_mpe = peca.dinabox_entity == "dinabox_porta"
+        # Regra especial: GAVETA no LOCAL -> MCX se indústria possui COR, BOR ou FUR
+        eh_gaveta_local = local.strip().upper() == "GAVETA"
+        industria_tem_cor_bor_fur = Setor.COR in setores or Setor.BOR in setores or Setor.FUR in setores
         
-        # MCX: Montagem de Caixa (Regra Técnica via UREF)
-        eh_mcx = "MCX" in uref
+        # MPE: Montagem de Portas e Externos
+        eh_mpe = peca.eh_porta_dinabox() or 'frente' in desc
         
-        # MAR: Marcenaria Geral (Heurística técnica residual)
-        eh_mar = "_painel_" in obs or "tamponamento" in desc or "regua" in desc or "régua" in desc or local.startswith('t -') or local.startswith('t-')
-
-        if eh_mcx:
+        # MAR: Marcenaria Geral
+        eh_mar = "_painel_" in obs or "tamponamento" in desc or "regua" in desc or "régua" in desc or "painel" in desc or local.startswith('t -') or local.startswith('t-')
+        
+        if eh_gaveta_local and industria_tem_cor_bor_fur:
+            setores.append(Setor.MCX)
+        elif eh_caixaria and not eh_mpe and not eh_mar:
             setores.append(Setor.MCX)
         elif eh_mpe:
             setores.append(Setor.MPE)
             setores.append(Setor.MAR)
-        elif eh_mar:
+        elif eh_mar or (peca.eh_ripa() and not eh_caixaria):
+            setores.append(Setor.MAR)
+        else:
+            # Default para marcenaria geral se não for caixaria ou porta
             setores.append(Setor.MAR)
 
         # 5. Especiais

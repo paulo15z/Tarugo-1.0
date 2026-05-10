@@ -324,17 +324,14 @@
 
 <header>
     <div class="header-container">
-        <a href="{% if user.is_authenticated %}{% url 'estoque:lista_produtos' %}{% else %}{% url 'login' %}{% endif %}" class="brand">
+        <a href="{% if user.is_authenticated %}{% url 'pcp:index' %}{% else %}{% url 'login' %}{% endif %}" class="brand">
             <div class="brand-dot"></div>
             <span>Tarugo</span>
         </a>
 
         <nav class="nav-main">
-            <a href="{% url 'estoque:lista_produtos' %}" class="nav-link {% if 'estoque' in request.path and 'reservas' not in request.path %}active{% endif %}">Estoque</a>
-            <a href="{% url 'estoque:lista_reservas' %}" class="nav-link {% if 'reservas' in request.path %}active{% endif %}">Reservas</a>
             <a href="{% url 'pcp:index' %}" class="nav-link {% if 'pcp' in request.path %}active{% endif %}">PCP</a>
-            <a href="{% url 'bipagem:index' %}" class="nav-link {% if 'bipagem' in request.path %}active{% endif %}">Bipagem</a>
-            <a href="{% url 'integracoes:dinabox-conectar' %}" class="nav-link {% if 'integracoes/dinabox' in request.path %}active{% endif %}">Dinabox</a>
+            <a href="{% url 'integracoes:index' %}" class="nav-link {% if 'integracoes' in request.path %}active{% endif %}">Integracoes</a>
         </nav>
 
         <div class="user-meta">

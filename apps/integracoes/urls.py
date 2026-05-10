@@ -5,6 +5,7 @@ from apps.integracoes import views
 app_name = "integracoes"
 
 urlpatterns = [
+    path("", views.integracoes_index, name="index"),
     path("dinabox/conectar/", views.dinabox_conectar, name="dinabox-conectar"),
     path("dinabox/desconectar/", views.dinabox_desconectar, name="dinabox-desconectar"),
     path("dinabox/capacidades/", views.dinabox_capacidades, name="dinabox-capacidades"),

@@ -20,7 +20,8 @@ class LotePCPRepository:
         numero_lote: int,
         pecas: List[PecaOperacional],
         usuario=None,
-        auditorias_raw: List[dict] | None = None
+        auditorias_raw: List[dict] | None = None,
+        origem_label: str = "Projeto",
     ) -> ProcessamentoPCP:
         """
         Cria ProcessamentoPCP + salva auditorias + persiste hierarquia LotePCP.
@@ -28,7 +29,7 @@ class LotePCPRepository:
         # 1. Criar ProcessamentoPCP (Histórico)
         processamento = ProcessamentoPCP.objects.create(
             id=processamento_id,
-            nome_arquivo=f"Projeto {project_id} (Pipeline v2)",
+            nome_arquivo=f"{origem_label} {project_id} (Pipeline v2)",
             lote=numero_lote,
             total_pecas=len(pecas),
             usuario=usuario,
@@ -50,7 +51,7 @@ class LotePCPRepository:
         # 3. Persistir Hierarquia LotePCP (para Bipagem)
         lote_pcp = LotePCP.objects.create(
             pid=processamento_id,
-            arquivo_original=f"Projeto {project_id}",
+            arquivo_original=f"{origem_label} {project_id}",
             cliente_nome=cliente_nome,
             cliente_id_projeto=project_id,
             status='pendente'
@@ -60,6 +61,8 @@ class LotePCPRepository:
         modulos_cache: Dict[str, ModuloPCP] = {}
 
         for p in pecas:
+            atributos_tecnicos = getattr(p, "atributos_tecnicos", {}) or {}
+
             # Garantir Ambiente
             amb_nome = p.modulo_nome or "GERAL"
             if amb_nome not in ambientes_cache:
@@ -102,7 +105,7 @@ class LotePCPRepository:
                     "tags": list(p.tags_markdown),
                     "eh_duplada": p.eh_duplada,
                     "dinabox_entity": p.dinabox_entity,
-                    "insumos_modulo": p.atributos_tecnicos.get("insumos_modulo", [])
+                    "insumos_modulo": atributos_tecnicos.get("insumos_modulo", [])
                 }
             )
 

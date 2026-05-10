@@ -8,7 +8,7 @@ from apps.integracoes.services_importacao import DinaboxImportacaoProjetoService
 
 
 class Command(BaseCommand):
-    help = "Processa a fila de importacoes de projetos Dinabox para Pedidos."
+    help = "Processa a fila de importacoes de projetos Dinabox para ingestao."
 
     def add_arguments(self, parser):
         parser.add_argument("--limit", type=int, default=10)
@@ -40,7 +40,9 @@ class Command(BaseCommand):
             concluidos += 1
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"[{resultado['pedido_numero']}] {resultado['ambiente_nome']} -> {resultado['ambiente_status']}"
+                    f"[{resultado.get('provider', 'provider')}] "
+                    f"{resultado.get('project_id', '-')} -> "
+                    f"{resultado.get('project_description', '-')}"
                 )
             )
 

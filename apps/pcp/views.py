@@ -116,52 +116,56 @@ def pcp_processar(request):
     arquivo = request.FILES.get("arquivo")
     
     if not (lote_str and lote_str.isdigit()):
-        return JsonResponse({"erro": "O número do lote é obrigatório"}, status=400)
+        return JsonResponse({"erro": "O nÃºmero do lote Ã© obrigatÃ³rio"}, status=400)
 
     lote_int = int(lote_str)
 
     try:
-        # MODO 1: Importação via API (Prioritário)
+        service = ProcessadorRoteiroService()
         if project_id:
-            service = ProcessadorRoteiroService()
             resultado = service.processar_projeto_dinabox(
                 project_id=project_id,
                 numero_lote=lote_int,
                 usuario=request.user
             )
-            # Preparar prévia para o frontend (primeiras 50 peças)
-            previa = []
-            for p in resultado.pecas_finais[:50]:
-                previa.append({
-                    "LOTE": p.get("lote_saida", ""),
-                    "DESCRICAO_DA_PECA": p.get("descricao", ""),
-                    "LOCAL": p.get("modulo_nome", ""),
-                    "OBSERVACAO": p.get("observacoes_original", ""),
-                    "PLANO": p.get("plano_corte", ""),
-                    "ROTEIRO": p.get("roteiro", ""),
-                })
+        elif arquivo:
+            resultado = service.processar_tabela_exportacao(
+                arquivo=arquivo,
+                numero_lote=lote_int,
+                usuario=request.user,
+            )
+        else:
+            return JsonResponse({"erro": "Informe um arquivo CSV/XLS/XLSX ou o ID do projeto."}, status=400)
 
-            # Resumo por roteiro
-            roteiro_counts = {}
-            for p in resultado.pecas_finais:
-                rot = p.get("roteiro", "NENHUM")
-                roteiro_counts[rot] = roteiro_counts.get(rot, 0) + 1
-            
-            resumo_roteiro = [{"roteiro": k, "qtd": v} for k, v in roteiro_counts.items()]
-
-            return JsonResponse({
-                "sucesso": True,
-                "pid": resultado.processamento_id,
-                "lote": lote_int,
-                "total": len(resultado.pecas_finais),
-                "resumo_processamento": resultado.resumo.model_dump() if hasattr(resultado.resumo, "model_dump") else {},
-                "nome_saida": resultado.arquivo_xls,
-                "auditoria_count": len(resultado.auditoria or []),
-                "previa": previa,
-                "resumo": resumo_roteiro,
+        previa = []
+        for p in resultado.pecas_finais[:50]:
+            previa.append({
+                "LOTE": p.get("lote_saida", ""),
+                "DESCRICAO_DA_PECA": p.get("descricao", ""),
+                "LOCAL": p.get("modulo_nome", ""),
+                "OBSERVACAO": p.get("observacoes_original", ""),
+                "PLANO": p.get("plano_corte", ""),
+                "ROTEIRO": p.get("roteiro", ""),
             })
 
-        return JsonResponse({"erro": "Informe o ID do projeto para importação via API"}, status=400)
+        roteiro_counts = {}
+        for p in resultado.pecas_finais:
+            rot = p.get("roteiro", "NENHUM")
+            roteiro_counts[rot] = roteiro_counts.get(rot, 0) + 1
+
+        resumo_roteiro = [{"roteiro": k, "qtd": v} for k, v in roteiro_counts.items()]
+
+        return JsonResponse({
+            "sucesso": True,
+            "pid": resultado.processamento_id,
+            "lote": lote_int,
+            "total": len(resultado.pecas_finais),
+            "resumo_processamento": resultado.resumo.model_dump() if hasattr(resultado.resumo, "model_dump") else {},
+            "nome_saida": resultado.arquivo_xls,
+            "auditoria_count": len(resultado.auditoria or []),
+            "previa": previa,
+            "resumo": resumo_roteiro,
+        })
     except Exception as e:
         import traceback
         print(traceback.format_exc())

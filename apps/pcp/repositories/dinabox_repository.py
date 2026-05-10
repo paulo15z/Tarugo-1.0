@@ -56,8 +56,19 @@ class DinaboxRepository:
                     material_id = getattr(parte, "material_id", None)
                     material_nome = getattr(parte, "material_name", None)
 
+                # Converter id para string sem .0
+                id_peca = parte.id
+                if id_peca:
+                    try:
+                        # Se for float como 123.0, converter para 123
+                        id_peca = str(int(float(id_peca)))
+                    except (ValueError, TypeError):
+                        id_peca = str(id_peca)
+                else:
+                    id_peca = "UNKNOWN"
+
                 peca = PecaOperacional(
-                    id_dinabox=parte.id,
+                    id_dinabox=id_peca,
                     ref_completa=f"{modulo.ref} - {parte.ref}",
                     ref_modulo=modulo.ref,
                     ref_peca=parte.ref,
