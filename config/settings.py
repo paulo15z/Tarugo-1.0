@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'apps.estoque',
     'apps.pcp',
     'apps.bipagem',
-    'apps.integracoes',
+    'apps.dinabox',
 ]
 
 MIDDLEWARE = [
