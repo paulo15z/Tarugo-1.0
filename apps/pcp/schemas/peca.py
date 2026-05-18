@@ -24,8 +24,17 @@ class Dimensoes(BaseModel): #dimensoes
 class BordaInfo(BaseModel): 
     face: Literal["left", "right", "top", "bottom"]
     nome: Optional[str] = None
-    perimetro_mm: Decimal = 0
+    perimetro_mm: Decimal = Field(default=Decimal(0))
     espessura_mm: int = 0
+    
+    @field_validator("perimetro_mm", mode="before")
+    @classmethod
+    def converter_perimetro(cls, v):
+        if v is None:
+            return Decimal(0)
+        if isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return Decimal(str(v))
 
 
 class PecaOperacional(BaseModel): # model tipado para o resto da operação

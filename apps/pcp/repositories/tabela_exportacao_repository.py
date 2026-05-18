@@ -179,9 +179,24 @@ class TabelaExportacaoRepository:
 
         # Tags baseadas em regras de negócio
         tags = set()
-        descricao_lower = csv_row.descricao_da_peca.lower()
-        if "ripa" in descricao_lower or "_ripa_" in (observacoes_original or "").lower():
+        descricao_lower = csv_row.descricao_da_peca.lower().strip()
+        
+        # Detecção de RIPA: SER EXTREMAMENTE ESPECÍFICO
+        # Uma RIPA é uma peça pequena com descrição exata "Ripa" ou similar
+        # NÃO marcar como ripa palavras que contêm "ripado" ou "ripada" (textura)
+        # e nem componentes como "Painel ripado", "Porta ripada", "Cordão", "Arremate", "Rodapé"
+        é_ripa = False
+        if "_ripa_" in (observacoes_original or "").lower():
+            é_ripa = True  # Marcação explícita tem prioridade
+        elif descricao_lower.startswith("ripa"):
+            # Apenas se COMEÇAR com "Ripa" (ex: "Ripa", "Ripa A", "Ripa B", "Ripa - T1")
+            # NÃO marcar se contém "ripado" ou "ripada" (esses são texturas, não ripas)
+            if "ripado" not in descricao_lower and "ripada" not in descricao_lower:
+                é_ripa = True
+        
+        if é_ripa:
             tags.add("_ripa_")
+            
         if eh_duplada:
             tags.add("_dup_")
         if material_com_veio:

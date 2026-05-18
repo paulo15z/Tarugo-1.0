@@ -15,10 +15,19 @@ class MaterialDinabox(BaseModel): #acabamento
 
 class EdgeDinabox(BaseModel): #borda
     name: Optional[str] = None
-    perimeter: Decimal = 0
+    perimeter: Decimal = Field(default=Decimal(0))
     thickness: int = 0
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("perimeter", mode="before")
+    @classmethod
+    def converter_perimetro(cls, v):
+        if v is None:
+            return Decimal(0)
+        if isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return Decimal(str(v))
 
     @model_validator(mode='before')
     @classmethod
