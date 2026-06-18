@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from typing import List, Union
+import re
 
 import pandas as pd
 import xlwt
@@ -73,6 +74,52 @@ def _pecas_para_dataframe(pecas: List[PecaOperacional]) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(rows)
+
+
+# Note: the experimental OPERACAO_USINAGEM implementation is currently on hold.
+# We keep the helper code here for future use, but the generated XLS still uses CONTEXTO.
+#
+# def _operacao_usinagem(peca: PecaOperacional) -> str:
+#     OPERATION_TAG_MAP = {
+#         "_cava_usinada_": "CAVA45",
+#         "_puxador_usinado_": "PUXADOR-01",
+#         "_provencal_": "PROVENCAL_PORTA",
+#         "_provencal_ripa_": "PROVENCAL_MOLDURA",
+#     }
+#
+#     reserved_tags = set(OPERATION_TAG_MAP.keys()) | {
+#         "_ripa_",
+#         "_dup_",
+#         "_veio_",
+#         "_pin_",
+#         "_tap_",
+#         "_led_",
+#     }
+#
+#     if peca.tags_markdown:
+#         for tag in peca.tags_markdown:
+#             normalized_tag = str(tag).strip().lower()
+#             if normalized_tag in OPERATION_TAG_MAP:
+#                 return OPERATION_TAG_MAP[normalized_tag]
+#
+#     obs = (peca.observacoes_original or "").lower()
+#     for marker, code in OPERATION_TAG_MAP.items():
+#         if marker in obs:
+#             return code
+#
+#     # Detect explicit manual operation codes from tags or obs, e.g. _PUXADOR-01_, _CAVA45_
+#     explicit_codes: list[str] = []
+#     if peca.tags_markdown:
+#         for tag in peca.tags_markdown:
+#             normalized_tag = str(tag).strip("_").upper()
+#             if normalized_tag and f"_{normalized_tag.lower()}_" not in reserved_tags and re.fullmatch(r"[A-Z0-9-]+", normalized_tag):
+#                 explicit_codes.append(normalized_tag)
+#
+#     for match in re.findall(r"_([A-Z0-9-]+)_", obs.upper()):
+#         if f"_{match.lower()}_" not in reserved_tags:
+#             explicit_codes.append(match)
+#
+#     return explicit_codes[0] if explicit_codes else ""
 
 
 def _write_xls(df: pd.DataFrame) -> bytes:

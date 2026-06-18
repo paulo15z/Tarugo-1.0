@@ -89,7 +89,11 @@ class PecaOperacional(BaseModel): # model tipado para o resto da operação
     model_config = ConfigDict(from_attributes=True, extra="allow")
 
     def eh_ripa(self) -> bool:
-        return "_ripa_" in self.tags_markdown or "ripa" in self.descricao.lower()
+        return (
+            "_ripa_" in self.tags_markdown
+            or "_provencal_ripa_" in self.tags_markdown
+            or "ripa" in self.descricao.lower()
+        )
 
     def eh_porta_dinabox(self) -> bool:
         """Regra forte baseada no entity da API"""

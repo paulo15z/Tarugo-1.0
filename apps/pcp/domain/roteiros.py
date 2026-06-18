@@ -54,8 +54,11 @@ class RoteiroCalculator:
     def calcular(peca: PecaOperacional) -> Roteiro:
         # Ripa é tratada de forma totalmente separada e tem prioridade
         # máxima — igual já acontece no PlanoCorteCalculator.
-        if peca.eh_ripa():
+        if RoteiroCalculator._eh_provencal_ripa(peca) or peca.eh_ripa():
             return RoteiroCalculator._calcular_ripa(peca)
+
+        if RoteiroCalculator._eh_provencal(peca):
+            return RoteiroCalculator._calcular_porta_provencal(peca)
 
         setores = [Setor.COR]
 
@@ -68,7 +71,7 @@ class RoteiroCalculator:
             setores.append(Setor.DUP)
 
         # 2. Furação / Usinagem
-        if peca.tem_furacoes():
+        if RoteiroCalculator._tem_furacao_real(peca):
             setores.append(Setor.FUR)
 
         # 3. Bordas
@@ -106,6 +109,33 @@ class RoteiroCalculator:
         return Roteiro(setores=RoteiroCalculator._sem_duplicatas(setores))
 
     @staticmethod
+    def _calcular_porta_provencal(peca: PecaOperacional) -> Roteiro:
+        setores = [Setor.COR]
+
+        if RoteiroCalculator._tem_puxador_usinado(peca):
+            if peca.tem_bordas():
+                setores.append(Setor.BOR)
+            if RoteiroCalculator._tem_furacao_real(peca):
+                setores.append(Setor.FUR)
+            setores.append(Setor.MPE)
+        else:
+            if RoteiroCalculator._tem_furacao_real(peca):
+                setores.append(Setor.FUR)
+            setores.append(Setor.MPE)
+            if peca.tem_bordas():
+                setores.append(Setor.BOR)
+
+        setores.append(Setor.MAR)
+
+        desc = peca.descricao.lower()
+        obs = (peca.observacoes_original or "").lower()
+        RoteiroCalculator._aplicar_especiais(setores, desc, obs)
+
+        setores.extend([Setor.CQL, Setor.EXP])
+
+        return Roteiro(setores=RoteiroCalculator._sem_duplicatas(setores))
+
+    @staticmethod
     def _calcular_ripa(peca: PecaOperacional) -> Roteiro:
         """
         Caminho fixo de ripa: COR -> BOR (bordo no comprimento, 2 lados
@@ -115,9 +145,12 @@ class RoteiroCalculator:
         (Caixa, Porta, Tamponamento, etc). Isso vale tanto pra ripa solta
         quanto pra tira consolidada — ambas passam por aqui.
         """
+        if RoteiroCalculator._eh_provencal_ripa(peca):
+            return RoteiroCalculator._calcular_ripa_provencal(peca)
+
         setores = [Setor.COR]
 
-        if peca.tem_furacoes():
+        if RoteiroCalculator._tem_furacao_real(peca):
             setores.append(Setor.FUR)
 
         if peca.tem_bordas():
@@ -132,6 +165,55 @@ class RoteiroCalculator:
         setores.extend([Setor.CQL, Setor.EXP])
 
         return Roteiro(setores=RoteiroCalculator._sem_duplicatas(setores))
+
+    @staticmethod
+    def _calcular_ripa_provencal(peca: PecaOperacional) -> Roteiro:
+        setores = [Setor.COR]
+
+        if peca.tem_bordas():
+            setores.append(Setor.BOR)
+
+        if RoteiroCalculator._tem_furacao_real(peca):
+            setores.append(Setor.FUR)
+
+        setores.append(Setor.MPE)
+        setores.append(Setor.MAR)
+
+        desc = peca.descricao.lower()
+        obs = (peca.observacoes_original or "").lower()
+        RoteiroCalculator._aplicar_especiais(setores, desc, obs)
+
+        setores.extend([Setor.CQL, Setor.EXP])
+
+        return Roteiro(setores=RoteiroCalculator._sem_duplicatas(setores))
+
+    @staticmethod
+    def _eh_provencal(peca: PecaOperacional) -> bool:
+        return RoteiroCalculator._tem_tag(peca, "_provencal_")
+
+    @staticmethod
+    def _eh_provencal_ripa(peca: PecaOperacional) -> bool:
+        return RoteiroCalculator._tem_tag(peca, "_provencal_ripa_")
+
+    @staticmethod
+    def _tem_puxador_usinado(peca: PecaOperacional) -> bool:
+        return RoteiroCalculator._tem_tag(peca, "_puxador_usinado_")
+
+    @staticmethod
+    def _tem_cava_usinada(peca: PecaOperacional) -> bool:
+        return RoteiroCalculator._tem_tag(peca, "_cava_usinada_")
+
+    @staticmethod
+    def _tem_furacao_real(peca: PecaOperacional) -> bool:
+        return peca.tem_furacoes() or RoteiroCalculator._tem_cava_usinada(peca)
+
+    @staticmethod
+    def _tem_tag(peca: PecaOperacional, tag: str) -> bool:
+        if tag in peca.tags_markdown:
+            return True
+        if peca.observacoes_original and tag in peca.observacoes_original.lower():
+            return True
+        return False
 
     @staticmethod
     def _aplicar_especiais(setores: List[Setor], desc: str, obs: str) -> None:

@@ -28,6 +28,26 @@ def _valor(row: dict[str, Any], *aliases: str, default: Any = "") -> Any:
     return default
 
 
+def _linha_e_rodape(row: dict[str, Any]) -> bool:
+    normalized_values = []
+    for v in row.values():
+        if v is None:
+            continue
+        text = str(v).strip()
+        if text == "":
+            continue
+        text = unicodedata.normalize("NFD", text)
+        text = text.encode("ascii", "ignore").decode()
+        normalized_values.append(text.strip().upper())
+
+    if not normalized_values:
+        return False
+
+    # Skip footer rows that contain only rodapé markers and optional blank cells.
+    rodape_markers = {"RODAPE", "RODAPÉ"}
+    return all(value in rodape_markers for value in normalized_values)
+
+
 def _decimal(value: Any, default: str = "0") -> Decimal:
     if value is None:
         return Decimal(default)
@@ -89,6 +109,9 @@ class TabelaExportacaoRepository:
         pecas: list[PecaOperacional] = []
         for index, raw in normalized.iterrows():
             row = raw.to_dict()
+
+            if _linha_e_rodape(row):
+                continue
 
             # Criar e validar linha do CSV com Pydantic
             try:
