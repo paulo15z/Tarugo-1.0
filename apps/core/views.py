@@ -36,16 +36,6 @@ def _apps_disponiveis(user) -> list[dict[str, str]]:
             }
         )
 
-    if is_admin or _has_any_group(user, {"gestao", "pcp", "ti"}):
-        apps.append(
-            {
-                "nome": "Integracoes",
-                "descricao": "Conectores externos para engenharia, clientes e materiais.",
-                "url": reverse("integracoes:index"),
-                "setor": "Integracoes",
-            }
-        )
-
     return apps
 
 

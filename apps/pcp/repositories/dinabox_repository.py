@@ -3,7 +3,6 @@ Repository responsável por transformar JSON da API Dinabox em objetos de domín
 """
 from typing import List, Set, Dict
 import re
-from apps.integracoes.dinabox.api_service import DinaboxApiService   
 from apps.pcp.schemas.dinabox import ProjectoDinabox
 from apps.pcp.schemas.peca import PecaOperacional, Dimensoes, BordaInfo
 

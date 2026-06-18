@@ -123,10 +123,9 @@ def pcp_processar(request):
     try:
         service = ProcessadorRoteiroService()
         if project_id:
-            resultado = service.processar_projeto_dinabox(
-                project_id=project_id,
-                numero_lote=lote_int,
-                usuario=request.user
+            return JsonResponse(
+                {"erro": "A funcionalidade Dinabox está temporariamente desativada."},
+                status=503,
             )
         elif arquivo:
             resultado = service.processar_tabela_exportacao(

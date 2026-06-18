@@ -16,10 +16,6 @@ urlpatterns = [
     # Apps
     path('pcp/', include('apps.pcp.urls')),
     path('api/pcp/', include('apps.pcp.api.urls')),
-
-    # Integracoes
-    path('integracoes/', include('apps.integracoes.urls')),
-    path('api/integracoes/dinabox/', include('apps.integracoes.dinabox.api.urls')),
 ]
 
 if settings.DEBUG:

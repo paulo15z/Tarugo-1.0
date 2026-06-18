@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class DinaboxConfig(AppConfig):
-    name = "dinabox"
+    name = "apps.dinabox"

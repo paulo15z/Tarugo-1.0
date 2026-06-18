@@ -6,11 +6,10 @@ import uuid
 
 from django.core.files.base import ContentFile
 
-from apps.integracoes.dinabox.api_service import DinaboxApiService
+
 from apps.pcp.domain.consolidador_ripas import ConsolidadorRipas
 from apps.pcp.domain.planos import PlanoCorteCalculator
 from apps.pcp.domain.roteiros import RoteiroCalculator
-from apps.pcp.repositories.dinabox_repository import DinaboxRepository
 from apps.pcp.repositories.lote_pcp_repository import LotePCPRepository
 from apps.pcp.repositories.tabela_exportacao_repository import TabelaExportacaoRepository
 from apps.pcp.schemas.peca import PecaOperacional
@@ -31,7 +30,6 @@ class ProcessadorRoteiroService:
     """
 
     def __init__(self):
-        self.dinabox_service = DinaboxApiService()
         self.consolidador = ConsolidadorRipas()
         self.roteiro_calc = RoteiroCalculator()
         self.plano_calc = PlanoCorteCalculator()
@@ -119,18 +117,4 @@ class ProcessadorRoteiroService:
             raise RuntimeError(f"Falha no processamento da tabela de exportacao: {exc}") from exc
 
     def processar_projeto_dinabox(self, project_id: str, numero_lote: int, usuario=None) -> ProcessarRoteiroOutput:
-        try:
-            project_detail = self.dinabox_service.get_project_detail(project_id)
-            raw_dict = project_detail.model_dump() if hasattr(project_detail, "model_dump") else dict(project_detail)
-            pecas = DinaboxRepository.parsear_para_pecas_operacionais(raw_dict)
-            return self._processar_pecas(
-                pecas=pecas,
-                origem_id=project_id,
-                cliente_nome=raw_dict.get("project_customer_name", "Desconhecido"),
-                numero_lote=numero_lote,
-                usuario=usuario,
-                nome_saida_prefixo=f"projeto_{project_id}",
-                origem_label="Projeto",
-            )
-        except Exception as exc:
-            raise RuntimeError(f"Falha no processamento do projeto {project_id}: {exc}") from exc
+        raise RuntimeError("Integração Dinabox está desativada.")
