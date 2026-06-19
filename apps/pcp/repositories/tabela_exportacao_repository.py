@@ -194,11 +194,18 @@ class TabelaExportacaoRepository:
 
         # Combinar observações
         observacoes_combinadas = []
+        def _normalize_obs(value: str | None) -> str:
+            return str(value or "").strip()
+
         if csv_row.observacao:
-            observacoes_combinadas.append(csv_row.observacao)
+            observacoes_combinadas.append(_normalize_obs(csv_row.observacao))
+
         if csv_row.obs:
-            observacoes_combinadas.append(csv_row.obs)
-        observacoes_original = " | ".join(observacoes_combinadas) if observacoes_combinadas else None
+            obs_value = _normalize_obs(csv_row.obs)
+            if obs_value and obs_value not in observacoes_combinadas:
+                observacoes_combinadas.append(obs_value)
+
+        observacoes_original = " - ".join(observacoes_combinadas) if observacoes_combinadas else None
 
         # Tags baseadas em regras de negócio
         tags = set()

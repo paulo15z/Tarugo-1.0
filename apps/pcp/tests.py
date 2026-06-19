@@ -46,12 +46,24 @@ class TabelaExportacaoRepositoryTests(SimpleTestCase):
         self.assertEqual(pecas[0].nome_do_projeto, "Projeto Y")
         self.assertEqual(pecas[0].descricao_modulo, "Modulo Z")
 
+    def test_nao_repete_obs_duplicada(self):
+        content = (
+            "ID DA PECA;REFERENCIA DA PECA;DESCRICAO DA PECA;LOCAL;OBS;OBSERVACAO;"
+            "ESPESSURA;LARGURA DA PECA;ALTURA DA PECA;QUANTIDADE\n"
+            "P1;MOD1-P1;Lateral esquerda;Cozinha;Teste obs;Teste obs;18;500;700;1\n"
+        ).encode("utf-8")
+        arquivo = SimpleUploadedFile("exportacao.csv", content, content_type="text/csv")
+        pecas = TabelaExportacaoRepository.parsear_arquivo(arquivo)
+
+        self.assertEqual(len(pecas), 1)
+        self.assertEqual(pecas[0].observacoes_original, "Teste obs")
+
     def test_gera_xls_real_com_todas_as_pecas(self):
         content = (
-            "ID DA PECA;REFERENCIA DA PECA;DESCRICAO DA PECA;LOCAL;"
+            "ID DA PECA;REFERENCIA DA PECA;DESCRICAO DA PECA;LOCAL;OBSERVACAO;"
             "ESPESSURA;LARGURA DA PECA;ALTURA DA PECA;QUANTIDADE\n"
-            "P1;MOD1-P1;Lateral esquerda;Cozinha;18;500;700;1\n"
-            "P2;MOD1-P2;Lateral direita;Cozinha;18;500;700;1\n"
+            "P1;MOD1-P1;Lateral esquerda;Cozinha;Teste obs 1;18;500;700;1\n"
+            "P2;MOD1-P2;Lateral direita;Cozinha;Teste obs 2;18;500;700;1\n"
         ).encode("utf-8")
         arquivo = SimpleUploadedFile("exportacao.csv", content, content_type="text/csv")
         pecas = TabelaExportacaoRepository.parsear_arquivo(arquivo)
@@ -66,5 +78,8 @@ class TabelaExportacaoRepositoryTests(SimpleTestCase):
         self.assertEqual(sheet.cell_value(0, 1), "ID DO PROJETO")
         self.assertEqual(sheet.cell_value(0, 2), "NOME DO PROJETO")
         self.assertEqual(sheet.cell_value(0, 3), "DESCRIÇÃO DO MÓDULO")
-        self.assertEqual(sheet.cell_value(1, 4), "Lateral esquerda")
-        self.assertEqual(sheet.cell_value(2, 4), "Lateral direita")
+        self.assertEqual(sheet.cell_value(0, 19), "OBSERVACAO")
+        self.assertEqual(sheet.cell_value(1, 19), "Teste obs 1")
+        self.assertEqual(sheet.cell_value(2, 19), "Teste obs 2")
+        self.assertEqual(sheet.cell_value(1, 7), "Lateral esquerda")
+        self.assertEqual(sheet.cell_value(2, 7), "Lateral direita")
